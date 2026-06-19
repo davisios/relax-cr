@@ -1,0 +1,56 @@
+📡 Descubriendo URLs desde sitemap_index.xml...
+  → post-sitemap.xml (blog_post)
+  → page-sitemap.xml (page)
+  → estate_property-sitemap.xml (property)
+  → estate_agent-sitemap.xml (agent)
+  → estate_agency-sitemap.xml (agency)
+  → category-sitemap.xml (blog_category)
+  → post_tag-sitemap.xml (blog_tag)
+  → property_category-sitemap.xml (property_category)
+  → property_action_category-sitemap.xml (property_action)
+  → property_city-sitemap.xml (city)
+  → property_area-sitemap.xml (area)
+  → property_features-sitemap.xml (property_feature)
+  → property_status-sitemap.xml (property_status)
+  → property_category_agent-sitemap.xml (agent_property_category)
+  → property_action_category_agent-sitemap.xml (agent_property_action)
+  → property_city_agent-sitemap.xml (agent_city)
+  → property_area_agent-sitemap.xml (agent_area)
+  → property_county_state_agent-sitemap.xml (agent_county)
+  → author-sitemap.xml (author)
+
+✅ 520 URLs únicas descubiertas
+
+💾 URLs guardadas en /Users/david/Documents/project/TurboRepo/scripts/relaxcostarica-scraper/output/url-discovery.json
+🔍 Scrapeando 520 páginas (concurrencia: 4, delay: 400ms)...
+
+  ⚠️  Error en https://relaxcostarica.com/stripe/: HTTP 500
+  [25/520] https://relaxcostarica.com/properties-list-sidebar-left-2/
+  [50/520] https://relaxcostarica.com/wpestate-crm-contacts/
+  [75/520] https://relaxcostarica.com/tours-and-activities/
+  [100/520] https://relaxcostarica.com/properties/garabito-central-pacific-costa-ricahermosa-beach-hermosa-non-gated-communitycalle-hermosa-58500/
+  [125/520] https://relaxcostarica.com/properties/parritabejuco-esterillos-and-bejuco-communitiesel-rincon-87038/
+  [150/520] https://relaxcostarica.com/properties/garabito-central-pacific-costa-ricaherradura-herradura-communitieslas-nubes-89177/
+  [175/520] https://relaxcostarica.com/properties/garabito-central-pacific-costa-ricahermosa-beach-hermosa-beach-gated-communitiesmistico-85114/
+  [200/520] https://relaxcostarica.com/properties/garabito-central-pacific-costa-ricajaco-jaco-beachfront-communitiespacific-point-108163/
+  [225/520] https://relaxcostarica.com/properties/garabito-central-pacific-costa-ricajaco-76305/
+  [250/520] https://relaxcostarica.com/properties/garabito-central-pacific-costa-ricatarcoles-tarcoles-gated-communitiesnativa-resort-87366/
+  [275/520] https://relaxcostarica.com/properties/crocs-casino-luxury-penthouse/
+  [300/520] https://relaxcostarica.com/properties/exclusive-beachfront-villa-and-studio-retreat-in-jaco-a-rare-coastal-treasure/
+  [325/520] https://relaxcostarica.com/properties/boutique-property-with-rooftop-in-jaco-beach/
+  [350/520] https://relaxcostarica.com/properties/garabito-central-pacific-costa-ricahermosa-beach-hermosa-beach-gated-communitieslas-gondolas-87575/
+  [375/520] https://relaxcostarica.com/properties/jaco-non-beachfront-communitiesvillas-paradise-condominiums-106860/
+  [400/520] https://relaxcostarica.com/tag/unleashing-the-wonders-of-jaco/
+  [425/520] https://relaxcostarica.com/neighborhood/ciudad-del-mar/
+  [450/520] https://relaxcostarica.com/neighborhood/loma-del-mar/
+  [475/520] https://relaxcostarica.com/neighborhood/villas-paradise-condominiums/
+  [500/520] https://relaxcostarica.com/features/penthouse/
+
+✅ Completado: 519/520 páginas
+⚠️  Errores: 1
+
+Archivos generados:
+  • /Users/david/Documents/project/TurboRepo/scripts/relaxcostarica-scraper/output/content-structure.json     → estructura jerárquica del sitio
+  • /Users/david/Documents/project/TurboRepo/scripts/relaxcostarica-scraper/output/all-pages.json          → todas las páginas en un JSON
+  • /Users/david/Documents/project/TurboRepo/scripts/relaxcostarica-scraper/output/pages/         → un JSON por página
+  • /Users/david/Documents/project/TurboRepo/scripts/relaxcostarica-scraper/output/scrape-report.json      → resumen de la ejecución

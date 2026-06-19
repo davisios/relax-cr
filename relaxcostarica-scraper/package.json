@@ -1,0 +1,14 @@
+{
+  "name": "relaxcostarica-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scrape": "node scrape.mjs",
+    "scrape:quick": "node scrape.mjs --types page,post --concurrency 3",
+    "structure": "node scrape.mjs --urls-only"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  }
+}

@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: "Inter", system-ui, sans-serif;
+    --font-cormorant: "Cormorant Garamond", Georgia, serif;
+    --font-great-vibes: "Great Vibes", cursive;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-cream text-neutral-900 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-ocean-700 text-white font-sans font-medium
+           px-6 py-3 rounded-md
+           hover:bg-ocean-900 active:scale-95
+           transition-all duration-200;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           border-2 border-ocean-700 text-ocean-700 font-sans font-medium
+           px-6 py-3 rounded-md
+           hover:bg-ocean-700 hover:text-white active:scale-95
+           transition-all duration-200;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           text-ocean-700 font-sans font-medium
+           px-4 py-2 rounded-md
+           hover:bg-ocean-100 active:scale-95
+           transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow duration-300;
+  }
+
+  .section-title {
+    @apply font-display text-3xl md:text-4xl font-semibold text-ocean-900;
+  }
+
+  .section-subtitle {
+    @apply font-sans text-neutral-500 text-lg mt-3 max-w-2xl;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-medium font-sans;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { @apply bg-neutral-100; }
+::-webkit-scrollbar-thumb { @apply bg-ocean-300 rounded-full; }
+
+/* Embla carousel */
+.embla { overflow: hidden; }
+.embla__container { display: flex; }
+.embla__slide { flex: 0 0 100%; min-width: 0; }

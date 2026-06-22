@@ -30,6 +30,16 @@ const NAV_LINKS = [
       { label: "Esterillos", href: "/neighborhoods/esterillos" },
     ],
   },
+  {
+    label: "Visit Jacó",
+    href: "/visit-jaco",
+    children: [
+      { label: "Top Restaurants", href: "/visit-jaco/restaurants" },
+      { label: "Tours & Activities", href: "/visit-jaco/tours" },
+      { label: "Vacation Rentals", href: "/visit-jaco/vacation-rentals" },
+      { label: "Private Chef", href: "https://ingredientspersonalchef.com/", external: true },
+    ],
+  },
   { label: "FAQ", href: "/faq" },
   { label: "Blog", href: "/blog" },
 ];
@@ -121,30 +131,47 @@ export default function Navbar() {
                       padding: "8px",
                     }}
                   >
-                    {link.children.map((child) => (
-                      <Link
-                        key={child.label}
-                        href={child.href}
-                        className="dropdown-item"
-                        style={{
-                          display: "block",
-                          padding: "10px 14px",
-                          borderRadius: "8px",
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#3a443f",
-                          textDecoration: "none",
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.background = "#edf7f5")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.background = "transparent")
-                        }
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
+                    {link.children.map((child) =>
+                      child.external ? (
+                        <a
+                          key={child.label}
+                          href={child.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "block",
+                            padding: "10px 14px",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#3a443f",
+                            textDecoration: "none",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "#edf7f5")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        >
+                          {child.label}
+                        </a>
+                      ) : (
+                        <Link
+                          key={child.label}
+                          href={child.href}
+                          style={{
+                            display: "block",
+                            padding: "10px 14px",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#3a443f",
+                            textDecoration: "none",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "#edf7f5")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        >
+                          {child.label}
+                        </Link>
+                      )
+                    )}
                   </div>
                   </div>
                 )}

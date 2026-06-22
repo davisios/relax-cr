@@ -14,6 +14,11 @@ interface PropertyCardProps {
 export default function PropertyCard({ property, className }: PropertyCardProps) {
   const heroImage = property.images[0];
   const href = `/properties/${property.slug}`;
+  const isLot = property.categorySlug === "lot-vacant-land";
+  const areaM2 = isLot ? property.lotSizeM2 ?? property.sizeM2 : property.sizeM2;
+  const showBedrooms = !isLot && (property.bedrooms ?? 0) > 0;
+  const showBathrooms = !isLot && (property.bathrooms ?? 0) > 0;
+  const showSpecs = showBedrooms || showBathrooms || areaM2;
 
   return (
     <Link
@@ -63,24 +68,24 @@ export default function PropertyCard({ property, className }: PropertyCardProps)
         </h3>
 
         {/* Specs */}
-        {(property.bedrooms || property.bathrooms || property.sizeM2) && (
+        {showSpecs && (
           <div className="flex items-center gap-4 mt-2 text-sm text-neutral-500">
-            {property.bedrooms && (
+            {showBedrooms && (
               <span className="flex items-center gap-1">
                 <Bed size={14} />
                 {property.bedrooms}
               </span>
             )}
-            {property.bathrooms && (
+            {showBathrooms && (
               <span className="flex items-center gap-1">
                 <Bath size={14} />
                 {property.bathrooms}
               </span>
             )}
-            {property.sizeM2 && (
+            {areaM2 && (
               <span className="flex items-center gap-1">
                 <Maximize2 size={14} />
-                {formatArea(property.sizeM2)}
+                {formatArea(areaM2)}
               </span>
             )}
           </div>

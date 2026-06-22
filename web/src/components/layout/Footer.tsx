@@ -127,9 +127,10 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Nav columns */}
+          {/* Nav columns — 2-col on mobile, 1-col each on lg */}
+          <div className="col-span-1 md:col-span-1 lg:col-span-4 grid grid-cols-2 lg:grid-cols-4 gap-8 lg:contents">
           {Object.entries(FOOTER_LINKS).map(([title, links]) => (
-            <div key={title}>
+            <div key={title} className="lg:col-span-1">
               <h4 className="text-sm font-sans font-semibold uppercase tracking-widest text-sand-500 mb-4">
                 {title}
               </h4>
@@ -147,6 +148,7 @@ export default function Footer() {
               </ul>
             </div>
           ))}
+          </div>
         </div>
       </div>
 

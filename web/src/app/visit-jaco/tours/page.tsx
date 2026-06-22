@@ -12,7 +12,7 @@ const TOURS = [
     tag: "Adventure",
     description: "Explore the rainforest for stunning views, hidden waterfalls, and wildlife in their natural habitat. Multiple vehicle options to accommodate different riding preferences.",
     highlights: ["Rainforest trails", "Hidden waterfalls", "Wildlife viewing", "All skill levels"],
-    image: "https://relaxcostarica.com/wp-content/uploads/2021/09/ATV-Rentals-Jaco-Costa-Rica.jpg",
+    image: "https://relaxcostarica.com/wp-content/uploads/2022/01/ATV-Rentals-Jaco-Costa-Rica.jpg",
   },
   {
     name: "Sport Fishing",
@@ -20,7 +20,7 @@ const TOURS = [
     tag: "Ocean",
     description: "Pursue world-class sport fishing on the Pacific with boat sizes ranging from small center consoles to large offshore yachts. Marlin, sailfish, tuna and more.",
     highlights: ["Pacific offshore fishing", "Multiple boat sizes", "Experienced captains", "Half & full-day trips"],
-    image: "https://relaxcostarica.com/wp-content/uploads/2021/09/Sport-Fishing-Jaco-Costa-Rica.jpg",
+    image: "https://relaxcostarica.com/wp-content/uploads/2022/01/Sport-Fishing-Jaco-Costa-Rica.jpg",
   },
   {
     name: "Zip Line / Canopy Tour",
@@ -28,7 +28,7 @@ const TOURS = [
     tag: "Aerial",
     description: "Descend through the mountainside canopy with sweeping views of the Pacific Ocean. Spot monkeys, toucans and sloths along the platforms while feeling the rush.",
     highlights: ["Ocean views", "Wildlife spotting", "Multiple cables", "Beginner-friendly"],
-    image: "https://relaxcostarica.com/wp-content/uploads/2021/09/Zip-LineCanopy-Tour-in-Uvita-Costa-Rica.jpg",
+    image: "https://relaxcostarica.com/wp-content/uploads/2022/01/Zip-LineCanopy-Tour-in-Uvita-Costa-Rica.jpg",
   },
   {
     name: "Crocodile Tour",
@@ -36,7 +36,7 @@ const TOURS = [
     tag: "Wildlife",
     description: "Take a boat along the famous Tárcoles River to observe wild crocodiles up close in their natural environment. Educational guides share local history and ecology.",
     highlights: ["Tárcoles River", "Wild crocodiles", "Educational guide", "Photography friendly"],
-    image: "https://relaxcostarica.com/wp-content/uploads/2021/09/Crocodile-Tour-Jaco-Costa-Rica.jpg",
+    image: "https://relaxcostarica.com/wp-content/uploads/2022/01/Crocodile-Tour-Jaco-Costa-Rica.jpg",
   },
   {
     name: "Horseback Riding",
@@ -44,7 +44,7 @@ const TOURS = [
     tag: "Nature",
     description: "Leisurely trail rides through jungle and beach paths, including natural pools for a quick dip. Family-friendly and suitable for all experience levels.",
     highlights: ["Beach & jungle trails", "Natural pools", "Family-friendly", "All experience levels"],
-    image: "https://relaxcostarica.com/wp-content/uploads/2021/09/Horseback-Tour-Jaco.jpg",
+    image: "https://relaxcostarica.com/wp-content/uploads/2022/01/Horseback-Tour-Jaco.jpg",
   },
   {
     name: "White Water Rafting",
@@ -52,7 +52,7 @@ const TOURS = [
     tag: "Adrenaline",
     description: "Navigate thrilling river rapids for an adrenaline rush you won't forget. Half-day and full-day options available — full-day trips head south to world-class Class IV rapids.",
     highlights: ["Class III & IV rapids", "Half & full-day", "Certified guides", "All gear included"],
-    image: "https://relaxcostarica.com/wp-content/uploads/2021/09/Rafting-Tour-Jaco-Costa-Rica.jpg",
+    image: "https://relaxcostarica.com/wp-content/uploads/2022/01/Rafting-Tour-Jaco-Costa-Rica.jpg",
   },
   {
     name: "Tortuga Island Tour",
@@ -60,7 +60,7 @@ const TOURS = [
     tag: "Island",
     description: "Full-day island excursion including fresh food, beverages, snorkeling, tube rides, a nature hike, margaritas and rum punch. One of the most popular day trips from Jacó.",
     highlights: ["Full-day trip", "Snorkeling included", "Food & drinks", "Nature hike"],
-    image: "https://relaxcostarica.com/wp-content/uploads/2021/09/Tortuga-Island-Tour-Jaco-Costa-Rica.jpg",
+    image: "https://relaxcostarica.com/wp-content/uploads/2022/01/Tortuga-Island-Tour-Jaco-Costa-Rica.jpg",
   },
   {
     name: "Surf Lessons",
@@ -68,7 +68,7 @@ const TOURS = [
     tag: "Water",
     description: "Professional instruction for all skill levels — from first-timers to intermediate surfers looking to improve technique. Scheduled daily based on the best tides.",
     highlights: ["All skill levels", "Daily scheduling", "Board & rash guard", "Certified instructors"],
-    image: "https://relaxcostarica.com/wp-content/uploads/2021/09/Surf-Lessons-Jaco-Costa-Rica.jpg",
+    image: "https://relaxcostarica.com/wp-content/uploads/2022/01/Surf-Lessons-Jaco-Costa-Rica.jpg",
   },
 ];
 

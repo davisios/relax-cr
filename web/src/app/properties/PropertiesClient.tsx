@@ -504,6 +504,8 @@ export default function PropertiesClient({ properties }: Props) {
             width: "256px",
             position: "sticky",
             top: "94px",
+            maxHeight: "calc(100vh - 110px)",
+            overflowY: "auto",
             background: "#fff",
             border: "1px solid #ece8df",
             borderRadius: "18px",

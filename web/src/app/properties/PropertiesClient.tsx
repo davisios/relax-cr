@@ -63,6 +63,29 @@ const PRICE_MAX_OPTIONS = [
   { value: "2000000", label: "$2,000,000" },
 ];
 
+const FEATURES = [
+  "Ocean View",
+  "Beachfront",
+  "Walk to Beach",
+  "Pool",
+  "Gated Community",
+  "Furnished",
+  "Partially Furnished",
+  "Central A/C",
+  "Great View",
+  "New Construction",
+  "Penthouse",
+  "Jacuzzi",
+  "Gym",
+  "Elevator",
+  "Pet friendly",
+  "Balcony",
+  "Garden",
+  "24 hour security",
+  "Seller Financing",
+  "Wi-fi",
+];
+
 const SORT_OPTIONS = [
   { value: "default", label: "Featured" },
   { value: "price-asc", label: "Price: Low → High" },
@@ -167,6 +190,8 @@ export default function PropertiesClient({ properties }: Props) {
   const urlMinPrice = searchParams.get("minPrice") || "";
   const urlMaxPrice = searchParams.get("maxPrice") || "";
   const urlSort = searchParams.get("sort") || "default";
+  const urlFeatures = searchParams.get("features") || "";
+  const activeFeatures = urlFeatures ? urlFeatures.split(",") : [];
 
   // Push updated params to URL
   const setParam = useCallback(
@@ -181,7 +206,17 @@ export default function PropertiesClient({ properties }: Props) {
 
   const clearAll = () => router.push("/properties");
 
-  const activeCount = [urlType, urlCity, urlBeds, urlBaths, urlMinPrice, urlMaxPrice].filter(Boolean).length;
+  const toggleFeature = useCallback(
+    (feature: string) => {
+      const next = activeFeatures.includes(feature)
+        ? activeFeatures.filter((f) => f !== feature)
+        : [...activeFeatures, feature];
+      setParam("features", next.join(","));
+    },
+    [activeFeatures, setParam]
+  );
+
+  const activeCount = [urlType, urlCity, urlBeds, urlBaths, urlMinPrice, urlMaxPrice, urlFeatures].filter(Boolean).length;
 
   const filtered = useMemo(() => {
     let result = [...properties];
@@ -198,12 +233,16 @@ export default function PropertiesClient({ properties }: Props) {
     if (urlBaths) result = result.filter((p) => (p.bathrooms ?? 0) >= parseInt(urlBaths));
     if (urlMinPrice) result = result.filter((p) => (p.price ?? 0) >= parseInt(urlMinPrice));
     if (urlMaxPrice) result = result.filter((p) => (p.price ?? 0) <= parseInt(urlMaxPrice));
+    if (activeFeatures.length > 0)
+      result = result.filter((p) =>
+        activeFeatures.every((f) => p.features?.includes(f))
+      );
 
     if (urlSort === "price-asc") result.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
     if (urlSort === "price-desc") result.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
 
     return result;
-  }, [properties, urlType, urlCity, urlBeds, urlBaths, urlMinPrice, urlMaxPrice, urlSort]);
+  }, [properties, urlType, urlCity, urlBeds, urlBaths, urlMinPrice, urlMaxPrice, urlSort, urlFeatures]);
 
   const sidebar = (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -307,6 +346,51 @@ export default function PropertiesClient({ properties }: Props) {
             options={PRICE_MAX_OPTIONS}
             onChange={(v) => setParam("maxPrice", v)}
           />
+        </div>
+      </FilterSection>
+
+      <FilterSection title="Features">
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {FEATURES.map((f) => {
+            const active = activeFeatures.includes(f);
+            return (
+              <label
+                key={f}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: active ? "#0e7a66" : "#3a443f",
+                }}
+              >
+                <span
+                  onClick={() => toggleFeature(f)}
+                  style={{
+                    flexShrink: 0,
+                    width: "18px",
+                    height: "18px",
+                    borderRadius: "5px",
+                    border: `2px solid ${active ? "#0e7a66" : "#d0ccc2"}`,
+                    background: active ? "#0e7a66" : "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all .15s ease",
+                  }}
+                >
+                  {active && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                <span onClick={() => toggleFeature(f)}>{f}</span>
+              </label>
+            );
+          })}
         </div>
       </FilterSection>
     </div>

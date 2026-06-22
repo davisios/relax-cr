@@ -186,7 +186,7 @@ export default function NeighborhoodPage({
             maxWidth: "1180px",
             margin: "0 auto",
             display: "grid",
-            gridTemplateColumns: "1.5fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))",
             gap: "60px",
             alignItems: "start",
           }}

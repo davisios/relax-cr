@@ -1,38 +1,41 @@
 import Link from "next/link";
 import { LandPlot, Home, Building2, Hotel } from "lucide-react";
+import { getPropertyCounts } from "@/lib/data/properties";
 
-const CATEGORIES = [
+const CATEGORY_CONFIG = [
   {
     icon: LandPlot,
     label: "Lot | Vacant Land",
-    count: 41,
+    slug: "lot-vacant-land",
     href: "/properties?type=lot-vacant-land",
     color: "bg-jungle-100 text-jungle-700",
   },
   {
     icon: Home,
     label: "House | Villa",
-    count: 60,
+    slug: "house-villa",
     href: "/properties?type=house-villa",
     color: "bg-ocean-100 text-ocean-700",
   },
   {
     icon: Building2,
     label: "Condo | Apartment",
-    count: 150,
+    slug: "condo-apartment",
     href: "/properties?type=condo-apartment",
     color: "bg-sand-100 text-sand-700",
   },
   {
     icon: Hotel,
     label: "Multi-family | Duplex | Triplex",
-    count: 12,
+    slug: "multi-family-duplex-triplex",
     href: "/properties?type=multi-family-duplex-triplex",
     color: "bg-purple-50 text-purple-700",
   },
-];
+] as const;
 
 export default function PopularCategories() {
+  const counts = getPropertyCounts();
+
   return (
     <section className="section-padding bg-white">
       <div className="container-page">
@@ -50,7 +53,7 @@ export default function PopularCategories() {
 
         {/* Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-          {CATEGORIES.map(({ icon: Icon, label, count, href, color }) => (
+          {CATEGORY_CONFIG.map(({ icon: Icon, label, slug, href, color }) => (
             <Link
               key={label}
               href={href}
@@ -63,7 +66,7 @@ export default function PopularCategories() {
                 {label}
               </h3>
               <span className="font-sans text-sm font-semibold text-neutral-400">
-                {count} Listings
+                {counts[slug] ?? 0} Listings
               </span>
             </Link>
           ))}

@@ -187,7 +187,13 @@ export default function PropertiesClient({ properties }: Props) {
     let result = [...properties];
 
     if (urlType) result = result.filter((p) => p.categorySlug === urlType);
-    if (urlCity) result = result.filter((p) => p.city?.toLowerCase().includes(urlCity.toLowerCase()));
+    if (urlCity) {
+      result = result.filter(
+        (p) =>
+          p.citySlug === urlCity ||
+          p.city?.toLowerCase().includes(urlCity.toLowerCase())
+      );
+    }
     if (urlBeds) result = result.filter((p) => (p.bedrooms ?? 0) >= parseInt(urlBeds));
     if (urlBaths) result = result.filter((p) => (p.bathrooms ?? 0) >= parseInt(urlBaths));
     if (urlMinPrice) result = result.filter((p) => (p.price ?? 0) >= parseInt(urlMinPrice));

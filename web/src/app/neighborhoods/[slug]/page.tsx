@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { NEIGHBORHOODS, getNeighborhoodBySlug } from "@/lib/data/neighborhoods";
+import { getPropertiesForNeighborhood } from "@/lib/data/properties";
 import NeighborhoodPage from "@/components/neighborhoods/NeighborhoodPage";
 
 export function generateStaticParams() {
@@ -29,5 +30,20 @@ export default async function Page({
   const { slug } = await params;
   const neighborhood = getNeighborhoodBySlug(slug);
   if (!neighborhood) notFound();
-  return <NeighborhoodPage neighborhood={neighborhood} />;
+
+  const properties = getPropertiesForNeighborhood(neighborhood.city);
+  const listingCount = properties.length;
+
+  return (
+    <NeighborhoodPage
+      neighborhood={{
+        ...neighborhood,
+        listingCount,
+        stats: neighborhood.stats.map((stat, index) =>
+          index === 0 ? { ...stat, value: String(listingCount) } : stat,
+        ),
+      }}
+      properties={properties}
+    />
+  );
 }

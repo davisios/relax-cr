@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Neighborhood, NeighborhoodProperty } from "@/lib/types/neighborhood";
+import PropertyCard from "@/components/property/PropertyCard";
+import type { Neighborhood } from "@/lib/types/neighborhood";
+import type { Property, PropertyCategory } from "@/lib/types/property";
 
 const PALETTES: Record<string, string[]> = {
   ocean: ["#8fd6cb", "#2fa494", "#0c6f62"],
@@ -18,13 +20,23 @@ const TABS = [
   { key: "condo", label: "Condos" },
   { key: "lot", label: "Lots" },
   { key: "hotel", label: "Hotels" },
-];
+] as const;
 
-function bgFor(pal: string, idx: number) {
-  const c = PALETTES[pal] || PALETTES.ocean;
-  const angle = 120 + idx * 48;
-  const x = 26 + idx * 18;
-  return `radial-gradient(circle at ${x}% 22%, rgba(255,255,255,.42), transparent 46%), linear-gradient(${angle}deg, ${c[0]}, ${c[1]} 55%, ${c[2]})`;
+const TYPE_FILTERS: Record<(typeof TABS)[number]["key"], PropertyCategory | null> = {
+  all: null,
+  house: "house-villa",
+  condo: "condo-apartment",
+  lot: "lot-vacant-land",
+  hotel: "hotel-bnb-apt-building",
+};
+
+const PREVIEW_LIMIT = 3;
+
+function propertiesSearchUrl(city: string, filterType: (typeof TABS)[number]["key"]) {
+  const params = new URLSearchParams({ city });
+  const category = TYPE_FILTERS[filterType];
+  if (category) params.set("type", category);
+  return `/properties?${params.toString()}`;
 }
 
 function heroBgFor(pal: string) {
@@ -32,217 +44,28 @@ function heroBgFor(pal: string) {
   return `radial-gradient(circle at 72% 16%, rgba(255,255,255,.38), transparent 44%), linear-gradient(155deg, ${c[0]} 0%, ${c[1]} 48%, ${c[2]} 100%)`;
 }
 
-function PropertyCard({ prop }: { prop: NeighborhoodProperty }) {
-  const [imgIdx, setImgIdx] = useState(0);
+export default function NeighborhoodPage({
+  neighborhood,
+  properties,
+}: {
+  neighborhood: Neighborhood;
+  properties: Property[];
+}) {
+  const [filterType, setFilterType] = useState<(typeof TABS)[number]["key"]>("all");
 
-  const move = (dir: number) =>
-    setImgIdx((i) => ((i + dir + 3) % 3));
-
-  const specs =
-    prop.type === "lot"
-      ? `${prop.size.toLocaleString()} m² lot`
-      : `${prop.beds} Bd · ${prop.baths} Ba${prop.size ? ` · ${prop.size} m²` : ""}`;
-
-  return (
-    <article
-      style={{
-        background: "#fff",
-        border: "1px solid #ece8df",
-        borderRadius: "18px",
-        overflow: "hidden",
-        cursor: "pointer",
-        transition: "transform .3s ease, box-shadow .3s ease",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = "translateY(-6px)";
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 24px 44px -22px rgba(20,60,52,.4)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = "none";
-        (e.currentTarget as HTMLElement).style.boxShadow = "none";
-      }}
-    >
-      <div
-        style={{
-          position: "relative",
-          height: "236px",
-          background: bgFor(prop.pal, imgIdx),
-          transition: "background .45s ease",
-        }}
-      >
-        <span
-          style={{
-            position: "absolute",
-            top: "14px",
-            left: "14px",
-            background: "rgba(255,255,255,.94)",
-            color: "#0e7a66",
-            fontWeight: 700,
-            fontSize: "12px",
-            letterSpacing: ".4px",
-            padding: "6px 12px",
-            borderRadius: "999px",
-          }}
-        >
-          {prop.typeLabel}
-        </span>
-        {prop.badge && (
-          <span
-            style={{
-              position: "absolute",
-              top: "14px",
-              right: "14px",
-              background: "#ff7a59",
-              color: "#fff",
-              fontWeight: 800,
-              fontSize: "11px",
-              letterSpacing: "1px",
-              padding: "6px 11px",
-              borderRadius: "999px",
-            }}
-          >
-            {prop.badge}
-          </span>
-        )}
-        <button
-          onClick={() => move(-1)}
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "12px",
-            transform: "translateY(-50%)",
-            width: "34px",
-            height: "34px",
-            borderRadius: "50%",
-            border: "none",
-            background: "rgba(255,255,255,.9)",
-            color: "#16201d",
-            fontSize: "18px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 2px 8px rgba(0,0,0,.15)",
-          }}
-        >
-          ‹
-        </button>
-        <button
-          onClick={() => move(1)}
-          style={{
-            position: "absolute",
-            top: "50%",
-            right: "12px",
-            transform: "translateY(-50%)",
-            width: "34px",
-            height: "34px",
-            borderRadius: "50%",
-            border: "none",
-            background: "rgba(255,255,255,.9)",
-            color: "#16201d",
-            fontSize: "18px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 2px 8px rgba(0,0,0,.15)",
-          }}
-        >
-          ›
-        </button>
-        <div
-          style={{
-            position: "absolute",
-            bottom: "13px",
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            gap: "6px",
-          }}
-        >
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              onClick={() => setImgIdx(i)}
-              style={{
-                width: i === imgIdx ? "20px" : "7px",
-                height: "7px",
-                borderRadius: "999px",
-                background: i === imgIdx ? "#fff" : "rgba(255,255,255,.6)",
-                transition: "all .3s ease",
-                cursor: "pointer",
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div style={{ padding: "20px 20px 22px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            color: "#7a857f",
-            fontSize: "13px",
-            fontWeight: 600,
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-            <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-          {prop.typeLabel}
-        </div>
-        <h3
-          style={{
-            margin: "9px 0 0",
-            fontSize: "18.5px",
-            lineHeight: 1.3,
-            letterSpacing: "-.4px",
-            fontWeight: 700,
-            color: "#16201d",
-          }}
-        >
-          {prop.title}
-        </h3>
-        <div style={{ margin: "13px 0 16px", color: "#5b6660", fontSize: "14px", fontWeight: 600 }}>
-          {specs}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingTop: "16px",
-            borderTop: "1px solid #f0ece3",
-          }}
-        >
-          <span style={{ fontSize: "23px", fontWeight: 800, letterSpacing: "-.8px", color: "#0e7a66" }}>
-            ${prop.price.toLocaleString()}
-          </span>
-          <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#16201d", display: "flex", alignItems: "center", gap: "5px" }}>
-            View <span style={{ fontSize: "16px" }}>→</span>
-          </span>
-        </div>
-      </div>
-    </article>
+  const categoryFilter = TYPE_FILTERS[filterType];
+  const filtered = properties.filter(
+    (property) => !categoryFilter || property.categorySlug === categoryFilter,
   );
-}
-
-export default function NeighborhoodPage({ neighborhood }: { neighborhood: Neighborhood }) {
-  const [filterType, setFilterType] = useState("all");
-
-  const filtered = neighborhood.properties.filter(
-    (p) => filterType === "all" || p.type === filterType
-  );
+  const preview = filtered.slice(0, PREVIEW_LIMIT);
+  const hasMore = filtered.length > PREVIEW_LIMIT;
+  const seeMoreHref = propertiesSearchUrl(neighborhood.city, filterType);
 
   const activeTab = TABS.find((t) => t.key === filterType)!;
   const resultLabel =
     filterType === "all"
-      ? `${neighborhood.properties.length} ${neighborhood.properties.length === 1 ? "property" : "properties"} for sale in ${neighborhood.name} right now.`
-      : `${filtered.length} of ${neighborhood.properties.length} listings match · ${activeTab.label}.`;
+      ? `${properties.length} ${properties.length === 1 ? "property" : "properties"} for sale in ${neighborhood.name} right now.`
+      : `${filtered.length} of ${properties.length} listings match · ${activeTab.label}.`;
 
   return (
     <div style={{ overflowX: "hidden" }}>
@@ -513,17 +336,47 @@ export default function NeighborhoodPage({ neighborhood }: { neighborhood: Neigh
           </div>
 
           {filtered.length > 0 ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
-                gap: "28px",
-              }}
-            >
-              {filtered.map((prop) => (
-                <PropertyCard key={prop.id} prop={prop} />
-              ))}
-            </div>
+            <>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
+                  gap: "28px",
+                }}
+              >
+                {preview.map((property) => (
+                  <PropertyCard key={property.slug} property={property} />
+                ))}
+              </div>
+              {hasMore && (
+                <div style={{ textAlign: "center", marginTop: "44px" }}>
+                  <Link
+                    href={seeMoreHref}
+                    style={{
+                      display: "inline-block",
+                      textDecoration: "none",
+                      background: "#0e7a66",
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: "15px",
+                      padding: "14px 32px",
+                      borderRadius: "999px",
+                      transition: "background .25s ease, transform .2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#0a5f50";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#0e7a66";
+                      e.currentTarget.style.transform = "none";
+                    }}
+                  >
+                    See more ({filtered.length - PREVIEW_LIMIT} more)
+                  </Link>
+                </div>
+              )}
+            </>
           ) : (
             <div style={{ textAlign: "center", padding: "64px 20px", color: "#7a857f" }}>
               <p style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>

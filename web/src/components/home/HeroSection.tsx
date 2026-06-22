@@ -1,43 +1,30 @@
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import PropertySearchWidget from "./PropertySearchWidget";
+import HeroSlideshow from "./HeroSlideshow";
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-[55vh] flex flex-col">
-      {/* Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage:
-            "url('https://relaxcostarica.com/wp-content/uploads/2021/09/jaco-beach-aerial-1.jpg')",
-        }}
-      />
+    <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
+      <HeroSlideshow />
       <div className="absolute inset-0 bg-hero-gradient" />
 
-      {/* Content */}
-      <div className="relative flex-1 flex flex-col items-center justify-center text-center container-page pt-20 pb-6">
-        {/* Eyebrow */}
-        <span className="inline-block font-sans text-sm font-medium tracking-widest uppercase text-sand-300 mb-4">
-          RE/MAX Oceanside Realty · Jaco Beach, Costa Rica
-        </span>
+      <div className="relative z-10 w-full container-page px-4 py-28 md:py-32 flex flex-col items-center justify-center text-center">
+        <p className="font-sans text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-sand-300 mb-5 max-w-3xl">
+          Dominique Brousseau · Jaco Beach Real Estate Agent
+        </p>
 
-        {/* Headline */}
-        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-white leading-tight max-w-4xl">
-          Dominique Brousseau
-          <br />
-          <span className="text-sand-300">Jaco Beach</span> Real Estate Agent
+        <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold text-white leading-[1.1] max-w-5xl">
+          Top Real Estate Listings in Jacó Beach, Costa Rica
         </h1>
 
-        {/* Subheadline */}
-        <p className="mt-4 font-sans text-base text-white/80 max-w-xl leading-relaxed">
+        <p className="mt-5 font-sans text-base sm:text-lg text-white/80 max-w-2xl leading-relaxed">
           Fluent in English, Spanish & French — helping you find your dream
           property in Costa Rica&apos;s most vibrant beach town.
         </p>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-wrap gap-3 justify-center mt-5 mb-6">
-          <Link href="/properties" className="btn-primary px-8 py-3.5 text-base">
+        <div className="flex flex-wrap gap-3 justify-center mt-8 mb-10">
+          <Link href="/properties" className="bg-[#1EB6A7] text-white rounded-full px-8 py-3.5 text-base">
             Browse Listings
           </Link>
           <Link
@@ -48,12 +35,12 @@ export default function HeroSection() {
           </Link>
         </div>
 
-        {/* Search Widget */}
-        <PropertySearchWidget />
+        <div className="w-full flex justify-center">
+          <PropertySearchWidget />
+        </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="relative flex justify-center pb-8 animate-bounce">
+      <div className="absolute bottom-8 left-0 right-0 z-10 flex justify-center animate-bounce pointer-events-none">
         <ChevronDown size={28} className="text-white/50" />
       </div>
     </section>

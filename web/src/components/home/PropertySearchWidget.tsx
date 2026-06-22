@@ -107,7 +107,7 @@ export default function PropertySearchWidget() {
       {/* Search button */}
       <button
         onClick={handleSearch}
-        className="w-full flex items-center justify-center gap-2 bg-ocean-700 hover:bg-ocean-900 text-white font-sans font-semibold rounded-lg px-6 py-3 text-sm transition-colors"
+        className="w-full flex items-center justify-center gap-2 bg-[#1EB6A7] hover:bg-[#1EB6A7] text-white font-sans font-semibold rounded-full px-6 py-3 text-sm transition-colors"
       >
         <Search size={16} />
         Search Listings

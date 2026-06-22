@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Menu, X, ChevronDown } from "lucide-react";
+import BrandLogo from "@/components/layout/BrandLogo";
 
 const NAV_LINKS = [
   {
@@ -38,7 +39,6 @@ export default function Navbar() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const navColor = "#16201d";
-  const navMuted = "#7a857f";
 
   return (
     <>
@@ -66,60 +66,7 @@ export default function Navbar() {
           }}
         >
           {/* Logo */}
-          <Link
-            href="/"
-            style={{
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: "11px",
-              flexShrink: 0,
-            }}
-          >
-            <span
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "11px",
-                background: "linear-gradient(135deg,#16b0a0,#0e7a66)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: "17px",
-                letterSpacing: "-1px",
-                flexShrink: 0,
-              }}
-            >
-              RC
-            </span>
-            <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.05 }}>
-              <span
-                style={{
-                  fontWeight: 800,
-                  fontSize: "16px",
-                  letterSpacing: "-0.3px",
-                  color: navColor,
-                  transition: "color 0.35s ease",
-                }}
-              >
-                Relax Costa Rica
-              </span>
-              <span
-                style={{
-                  fontSize: "10.5px",
-                  letterSpacing: "2.5px",
-                  textTransform: "uppercase",
-                  fontWeight: 600,
-                  color: navMuted,
-                  transition: "color 0.35s ease",
-                }}
-              >
-                Jacó Beach Real Estate
-              </span>
-            </span>
-          </Link>
+          <BrandLogo size={38} titleSize={16} subtitleSize={10.5} />
 
           {/* Desktop Nav */}
           <nav
@@ -294,35 +241,12 @@ export default function Navbar() {
                 borderBottom: "1px solid #f0ece3",
               }}
             >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "10px" }}
-              >
-                <span
-                  style={{
-                    width: "34px",
-                    height: "34px",
-                    borderRadius: "10px",
-                    background: "linear-gradient(135deg,#16b0a0,#0e7a66)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    fontWeight: 800,
-                    fontSize: "15px",
-                  }}
-                >
-                  RC
-                </span>
-                <span
-                  style={{
-                    fontWeight: 800,
-                    fontSize: "15px",
-                    color: "#16201d",
-                  }}
-                >
-                  Relax Costa Rica
-                </span>
-              </div>
+              <BrandLogo
+                size={34}
+                titleSize={15}
+                subtitleSize={10}
+                onClick={() => setMobileOpen(false)}
+              />
               <button
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"

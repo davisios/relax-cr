@@ -1,278 +1,196 @@
 import fs from "fs";
 import path from "path";
-import type { Property } from "@/lib/types/property";
+import type { Property, PropertyCategory, PropertyStatus } from "@/lib/types/property";
+import type { PropertiesSourceFile, SourceProperty } from "@/lib/types/properties-source";
 
-const PAGES_DIR = path.join(
-  process.cwd(),
-  "..",
-  "relaxcostarica-scraper",
-  "output",
-  "pages"
-);
+const PROPERTIES_JSON = path.join(process.cwd(), "properties.json");
 
-// Parse price string like "$ 190,000" → 190000
-function parsePrice(priceStr?: string): number | undefined {
-  if (!priceStr) return undefined;
-  const num = priceStr.replace(/[^0-9]/g, "");
-  return num ? parseInt(num, 10) : undefined;
+const VALID_CATEGORIES: PropertyCategory[] = [
+  "condo-apartment",
+  "house-villa",
+  "lot-vacant-land",
+  "multi-family-duplex-triplex",
+  "hotel-bnb-apt-building",
+  "commercial-building-office-space-warehouse",
+];
+
+const VALID_STATUSES: PropertyStatus[] = [
+  "for-sale",
+  "sold",
+  "in-contract",
+  "recently-reduced",
+  "exclusive",
+];
+
+let cachedProperties: Property[] | null = null;
+
+function formatPriceLabel(price: number): string {
+  return `$ ${price.toLocaleString("en-US")}`;
 }
 
-// Extract bedrooms/bathrooms/size from paragraph text
-function extractSpecs(text: string) {
-  const beds = text.match(/(\d+)\s*Bedroom/i);
-  const baths = text.match(/(\d+)\s*Bathroom/i);
-  const size = text.match(/Size\s*([\d,]+)\s*m2/i);
-  return {
-    bedrooms: beds ? parseInt(beds[1]) : undefined,
-    bathrooms: baths ? parseInt(baths[1]) : undefined,
-    sizeM2: size ? parseInt(size[1].replace(/,/g, "")) : undefined,
-  };
-}
+function inferCategorySlug(raw: SourceProperty): PropertyCategory {
+  const slug = raw.taxonomy.category?.slug;
+  if (slug && VALID_CATEGORIES.includes(slug as PropertyCategory)) {
+    return slug as PropertyCategory;
+  }
 
-// Extract property category slug from description or URL
-function extractCategory(desc: string, url: string): Property["categorySlug"] {
-  const lower = (desc + url).toLowerCase();
-  if (lower.includes("condo") || lower.includes("apartment")) return "condo-apartment";
-  if (lower.includes("house") || lower.includes("villa")) return "house-villa";
-  if (lower.includes("lot") || lower.includes("land")) return "lot-vacant-land";
-  if (lower.includes("multi-family") || lower.includes("duplex")) return "multi-family-duplex-triplex";
-  if (lower.includes("hotel") || lower.includes("bnb")) return "hotel-bnb-apt-building";
-  if (lower.includes("commercial") || lower.includes("office")) return "commercial-building-office-space-warehouse";
+  const text = `${raw.title} ${raw.content.excerpt ?? ""}`.toLowerCase();
+  if (text.includes("condo") || text.includes("apartment")) return "condo-apartment";
+  if (text.includes("lot") || text.includes("land")) return "lot-vacant-land";
+  if (text.includes("multi-family") || text.includes("duplex")) return "multi-family-duplex-triplex";
+  if (text.includes("hotel") || text.includes("bnb")) return "hotel-bnb-apt-building";
+  if (text.includes("commercial") || text.includes("office")) return "commercial-building-office-space-warehouse";
   return "house-villa";
 }
 
-function extractCategoryLabel(desc: string): string {
-  if (desc.includes("Condo | Apartment")) return "Condo | Apartment";
-  if (desc.includes("House | Villa")) return "House | Villa";
-  if (desc.includes("Lot | Vacant Land")) return "Lot | Vacant Land";
-  if (desc.includes("Multi-family")) return "Multi-family | Duplex";
-  if (desc.includes("Hotel | BNB") || desc.includes("Hotel | BnB")) return "Hotel | BNB";
-  if (desc.includes("Commercial")) return "Commercial";
-  return "Property";
+function inferCategoryLabel(raw: SourceProperty, categorySlug: PropertyCategory): string {
+  if (raw.taxonomy.category?.name) return raw.taxonomy.category.name;
+
+  const labels: Record<PropertyCategory, string> = {
+    "condo-apartment": "Condo | Apartment",
+    "house-villa": "House | Villa",
+    "lot-vacant-land": "Lot | Vacant Land",
+    "multi-family-duplex-triplex": "Multi-family | Duplex",
+    "hotel-bnb-apt-building": "Hotel | BNB",
+    "commercial-building-office-space-warehouse": "Commercial",
+  };
+  return labels[categorySlug];
 }
 
-function parsePropertyFile(filePath: string): Property | null {
+function mapListingStatus(raw: SourceProperty): PropertyStatus {
+  const slug = raw.taxonomy.status?.slug;
+  if (slug && VALID_STATUSES.includes(slug as PropertyStatus)) {
+    return slug as PropertyStatus;
+  }
+  return "for-sale";
+}
+
+function mapImages(raw: SourceProperty): Property["images"] {
+  const gallery = raw.media?.gallery ?? [];
+  const seen = new Set<string>();
+
+  return gallery
+    .filter((img) => {
+      if (!img.url || seen.has(img.url)) return false;
+      seen.add(img.url);
+      const alt = (img.alt ?? img.title ?? "").toLowerCase();
+      return !alt.includes("logo") && !alt.includes("thumb");
+    })
+    .map((img) => ({
+      src: img.url,
+      alt: img.alt || img.title || raw.title,
+    }));
+}
+
+function mapSourceProperty(raw: SourceProperty): Property | null {
+  if (raw.status !== "publish") return null;
+
+  const categorySlug = inferCategorySlug(raw);
+  const price = raw.pricing?.property_price || undefined;
+  const images = mapImages(raw);
+
+  return {
+    slug: raw.slug,
+    url: raw.url,
+    title: raw.title,
+    description: raw.content.description || raw.content.body || undefined,
+    price,
+    priceLabel: price ? formatPriceLabel(price) : undefined,
+    category: inferCategoryLabel(raw, categorySlug),
+    categorySlug,
+    status: mapListingStatus(raw),
+    city: raw.taxonomy.city?.name || undefined,
+    citySlug: raw.taxonomy.city?.slug || undefined,
+    area: raw.taxonomy.area?.name || undefined,
+    bedrooms: raw.details.property_bedrooms ?? undefined,
+    bathrooms: raw.details.property_bathrooms ?? undefined,
+    sizeM2: raw.details.property_size ?? undefined,
+    lotSizeM2: raw.details.property_lot_size ?? undefined,
+    yearBuilt: raw.details.property_year ?? undefined,
+    garages: raw.details.property_garage || undefined,
+    features: raw.taxonomy.features?.map((f) => f.name) ?? undefined,
+    images,
+    agent: raw.author || "Dominique Brousseau",
+    isFeatured: raw.flags?.prop_featured === 1,
+    latitude: raw.location?.property_latitude ?? undefined,
+    longitude: raw.location?.property_longitude ?? undefined,
+    address: raw.location?.property_address || undefined,
+  };
+}
+
+function loadSourceFile(): PropertiesSourceFile | null {
+  if (!fs.existsSync(PROPERTIES_JSON)) return null;
+
   try {
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const data = JSON.parse(raw);
-    if (data.type !== "property") return null;
-
-    const details = data.propertyDetails || {};
-    const price = parsePrice(details.price);
-    const mainText = data.mainContent || "";
-    const specs = extractSpecs(mainText);
-    const desc = data.description || "";
-
-    // Filter property images (skip logos)
-    const images = (data.images || [])
-      .filter(
-        (img: { src: string; alt: string }) =>
-          img.src.includes("wp-content/uploads") &&
-          !img.alt?.toLowerCase().includes("logo") &&
-          !img.alt?.toLowerCase().includes("thumb") &&
-          img.src.match(/\d{4,}/)
-      )
-      .slice(0, 8);
-
-    return {
-      slug: data.slug,
-      url: data.url,
-      title: data.title,
-      description: desc,
-      price,
-      priceLabel: details.price,
-      category: extractCategoryLabel(desc + mainText),
-      categorySlug: extractCategory(desc, data.url),
-      status: "for-sale",
-      images,
-      agent: "Dominique Brousseau",
-      ...specs,
-    };
+    const raw = fs.readFileSync(PROPERTIES_JSON, "utf-8");
+    return JSON.parse(raw) as PropertiesSourceFile;
   } catch {
     return null;
   }
 }
 
-export function getAllProperties(): Property[] {
-  if (!fs.existsSync(PAGES_DIR)) return getFallbackProperties();
+function loadAllProperties(): Property[] {
+  if (cachedProperties) return cachedProperties;
 
-  const files = fs.readdirSync(PAGES_DIR).filter((f) => f.startsWith("property__"));
-  const properties = files
-    .map((f) => parsePropertyFile(path.join(PAGES_DIR, f)))
+  const source = loadSourceFile();
+  if (!source) {
+    cachedProperties = [];
+    return cachedProperties;
+  }
+
+  cachedProperties = source.properties
+    .map(mapSourceProperty)
     .filter((p): p is Property => p !== null);
 
-  return properties;
+  return cachedProperties;
 }
 
-export function getFeaturedProperties(): Property[] {
-  const all = getAllProperties();
-  // Prefer properties with images and price
-  return all
+export function getAllProperties(): Property[] {
+  return loadAllProperties();
+}
+
+export function getFeaturedProperties(limit = 6): Property[] {
+  return getAllProperties()
     .filter((p) => p.images.length > 0 && p.price)
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 9);
+    .sort((a, b) => {
+      const aFeatured = a.isFeatured ? 1 : 0;
+      const bFeatured = b.isFeatured ? 1 : 0;
+      return bFeatured - aFeatured;
+    })
+    .slice(0, limit);
 }
 
 export function getPropertyBySlug(slug: string): Property | null {
-  const filePath = path.join(PAGES_DIR, `property__${slug}.json`);
-  if (!fs.existsSync(filePath)) return null;
-  return parsePropertyFile(filePath);
+  return getAllProperties().find((p) => p.slug === slug) ?? null;
 }
 
 export function getPropertiesByCategory(categorySlug: string): Property[] {
   return getAllProperties().filter((p) => p.categorySlug === categorySlug);
 }
 
-export function getPropertyCounts() {
-  const all = getAllProperties();
+const NEIGHBORHOOD_CITY_ALIASES: Record<string, string[]> = {
+  esterillos: ["esterillos", "bejuco", "parrita"],
+};
+
+export function getPropertiesByCity(citySlug: string): Property[] {
+  const aliases = NEIGHBORHOOD_CITY_ALIASES[citySlug] ?? [citySlug];
+
+  return getAllProperties().filter((property) => {
+    if (property.citySlug && aliases.includes(property.citySlug)) return true;
+
+    const locationText = `${property.title} ${property.area ?? ""} ${property.city ?? ""}`.toLowerCase();
+    return aliases.some((alias) => locationText.includes(alias.replace(/-/g, " ")));
+  });
+}
+
+export function getPropertiesForNeighborhood(citySlug: string): Property[] {
+  return getPropertiesByCity(citySlug);
+}
+
+export function getPropertyCounts(): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const p of all) {
-    counts[p.categorySlug] = (counts[p.categorySlug] || 0) + 1;
+  for (const property of getAllProperties()) {
+    counts[property.categorySlug] = (counts[property.categorySlug] || 0) + 1;
   }
   return counts;
 }
-
-// Fallback data when scraper output is not available (e.g., Vercel build)
-function getFallbackProperties(): Property[] {
-  return FEATURED_PROPERTIES_FALLBACK;
-}
-
-export const FEATURED_PROPERTIES_FALLBACK: Property[] = [
-  {
-    slug: "tropical-condo-steps-from-jaco-beach",
-    url: "#",
-    title: "Tropical Condo Steps from Jaco Beach",
-    price: 175000,
-    priceLabel: "$ 175,000",
-    category: "Condo | Apartment",
-    categorySlug: "condo-apartment",
-    status: "for-sale",
-    bedrooms: 1,
-    bathrooms: 1,
-    sizeM2: 56,
-    agent: "Dominique Brousseau",
-    images: [
-      {
-        src: "https://relaxcostarica.com/wp-content/uploads/2026/06/Garabito-Central-Pacific-Costa-RicaJaco-For-Sale-109098-525x328.jpeg",
-        alt: "Tropical Condo Steps from Jaco Beach",
-      },
-    ],
-  },
-  {
-    slug: "live-jaco-penthouse-ocean-sunset-views",
-    url: "#",
-    title: "Live Jacó Penthouse with Ocean and Sunset Views",
-    price: 560000,
-    priceLabel: "$ 560,000",
-    category: "Condo | Apartment",
-    categorySlug: "condo-apartment",
-    status: "for-sale",
-    bedrooms: 3,
-    bathrooms: 3,
-    sizeM2: 139,
-    agent: "Dominique Brousseau",
-    images: [
-      {
-        src: "https://relaxcostarica.com/wp-content/uploads/2026/06/Garabito-Central-Pacific-Costa-RicaJaco-For-Sale-108954-525x328.jpg",
-        alt: "Live Jacó Penthouse",
-      },
-    ],
-  },
-  {
-    slug: "beautiful-3-bedroom-home-hermosa-beach",
-    url: "https://relaxcostarica.com/properties/garabito-central-pacific-costa-ricahermosa-beach-hermosa-non-gated-communitycalle-hermosa-108920/",
-    title: "NEW Beautiful 3-Bedroom Home with Pool | Hermosa Beach",
-    price: 370000,
-    priceLabel: "$ 370,000",
-    category: "House | Villa",
-    categorySlug: "house-villa",
-    status: "for-sale",
-    city: "Hermosa Beach",
-    area: "Hermosa Non-gated community",
-    bedrooms: 3,
-    bathrooms: 2,
-    sizeM2: 130,
-    lotSizeM2: 490,
-    yearBuilt: 2026,
-    garages: "Parking up to 6 vehicles",
-    features: [
-      "Backyard",
-      "Close to town",
-      "Fenced Yard",
-      "Front Yard",
-      "Garden",
-      "New Construction",
-      "Not Furnished",
-      "Pet friendly",
-      "Storage",
-      "Title | Fully-titled Ownership",
-    ],
-    agent: "Dominique Brousseau",
-    isFeatured: true,
-    images: [
-      {
-        src: "https://relaxcostarica.com/wp-content/uploads/2026/06/Garabito-Central-Pacific-Costa-RicaHermosa-Beach-For-Sale-108920-525x328.jpg",
-        alt: "NEW Beautiful 3-Bedroom Home with Pool | Hermosa Beach",
-      },
-    ],
-  },
-  {
-    slug: "modern-turnkey-viva-jaco-condo",
-    url: "#",
-    title: 'MODERN "NEW" TURN-KEY VIVA JACO CONDO',
-    price: 219000,
-    priceLabel: "$ 219,000",
-    category: "Condo | Apartment",
-    categorySlug: "condo-apartment",
-    status: "for-sale",
-    bedrooms: 2,
-    bathrooms: 1,
-    sizeM2: 72,
-    agent: "Dominique Brousseau",
-    images: [
-      {
-        src: "https://relaxcostarica.com/wp-content/uploads/2026/06/Garabito-Central-Pacific-Costa-RicaJaco-For-Sale-108867-525x328.jpg",
-        alt: "Viva Jaco Condo",
-      },
-    ],
-  },
-  {
-    slug: "boutique-property-rooftop-jaco-beach",
-    url: "#",
-    title: "Boutique Property with Rooftop in Jaco Beach",
-    price: 2500000,
-    priceLabel: "$ 2,500,000",
-    category: "Hotel | BNB",
-    categorySlug: "hotel-bnb-apt-building",
-    status: "for-sale",
-    bedrooms: 9,
-    bathrooms: 11,
-    agent: "Dominique Brousseau",
-    images: [
-      {
-        src: "https://relaxcostarica.com/wp-content/uploads/2026/06/Garabito-Central-Pacific-Costa-RicaJaco-108280-525x328.jpg",
-        alt: "Boutique Property Jaco",
-      },
-    ],
-  },
-  {
-    slug: "stunning-oceanfront-condo-south-jaco",
-    url: "#",
-    title: "Stunning Oceanfront Condo in South Jacó with Panoramic Views",
-    price: 499000,
-    priceLabel: "$ 499,000",
-    category: "Condo | Apartment",
-    categorySlug: "condo-apartment",
-    status: "for-sale",
-    bedrooms: 2,
-    bathrooms: 2,
-    sizeM2: 137,
-    agent: "Dominique Brousseau",
-    images: [
-      {
-        src: "https://relaxcostarica.com/wp-content/uploads/2026/06/Garabito-Central-Pacific-Costa-RicaJaco-108902-525x328.jpeg",
-        alt: "Oceanfront Condo Jaco",
-      },
-    ],
-  },
-];

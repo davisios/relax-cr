@@ -29,6 +29,7 @@ export interface Property {
   categorySlug: PropertyCategory;
   status: PropertyStatus;
   city?: string;
+  citySlug?: string;
   area?: string;
   bedrooms?: number;
   bathrooms?: number;
@@ -40,4 +41,7 @@ export interface Property {
   images: PropertyImage[];
   agent?: string;
   isFeatured?: boolean;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
 }

@@ -1,0 +1,93 @@
+{
+  "url": "https://relaxcostarica.com/property-valuation/",
+  "canonical": "https://relaxcostarica.com/property-valuation/",
+  "slug": "property-valuation",
+  "type": "page",
+  "title": "Property Valuation | Jaco Real Estate Agent",
+  "description": "Property Valuation | Do you want to see how much your property is worth? | Dominique Brousseau Jaco Real Estate Agent Agent",
+  "headings": [
+    {
+      "level": 2,
+      "text": "Do want to know what your property is worth?"
+    },
+    {
+      "level": 2,
+      "text": "Get your Property Estimation"
+    }
+  ],
+  "formFields": [
+    {
+      "tag": "input",
+      "type": "text",
+      "name": "first_name",
+      "label": "First Name",
+      "placeholder": "First Name",
+      "required": false
+    },
+    {
+      "tag": "input",
+      "type": "text",
+      "name": "last_name",
+      "label": "Last Name",
+      "placeholder": "Last Name",
+      "required": false
+    },
+    {
+      "tag": "input",
+      "type": "email",
+      "name": "email",
+      "label": "Email",
+      "placeholder": "Email",
+      "required": true
+    },
+    {
+      "tag": "input",
+      "type": "text",
+      "name": "mobile",
+      "label": "Mobile",
+      "placeholder": "Mobile",
+      "required": true
+    },
+    {
+      "tag": "input",
+      "type": "text",
+      "name": "country",
+      "label": "Country",
+      "placeholder": "Country",
+      "required": false
+    },
+    {
+      "tag": "input",
+      "type": "text",
+      "name": "city",
+      "label": "City",
+      "placeholder": "City",
+      "required": false
+    },
+    {
+      "tag": "input",
+      "type": "text",
+      "name": "address",
+      "label": "Address",
+      "placeholder": "Address",
+      "required": false
+    },
+    {
+      "tag": "textarea",
+      "type": "textarea",
+      "name": "message",
+      "label": "Message",
+      "placeholder": "Message",
+      "required": true
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "wpestate_agree_gdpr",
+      "label": "I consent to having my information saved",
+      "placeholder": null,
+      "required": false
+    }
+  ],
+  "scrapedAt": "2026-06-22T02:06:51.274Z"
+}

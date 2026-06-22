@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import BrandLogo from "@/components/layout/BrandLogo";
 import {
   Facebook,
   Youtube,
@@ -70,19 +70,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12">
           {/* Brand column */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-3 mb-5">
-              <Image
-                src="https://relaxcostarica.com/wp-content/uploads/2021/09/cropped-DB-Real-Estate-200.png"
-                alt="Dominique Brousseau"
-                width={52}
-                height={52}
-                className="rounded-full"
-                unoptimized
-              />
-              <span className="font-display text-xl font-semibold text-white">
-                Relax Costa Rica
-              </span>
-            </Link>
+            <div className="mb-5">
+              <BrandLogo size={52} variant="light" titleSize={20} subtitleSize={11} />
+            </div>
 
             <p className="font-script text-sand-300 text-2xl mb-4">
               Imagine living your Dream everyday…

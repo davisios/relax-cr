@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import PropertyCard from "@/components/property/PropertyCard";
-import { FEATURED_PROPERTIES_FALLBACK } from "@/lib/data/properties";
+import { getFeaturedProperties } from "@/lib/data/properties";
 
 export default function FeaturedProperties() {
-  // Use fallback data — in production this could be fetched server-side
-  const properties = FEATURED_PROPERTIES_FALLBACK;
+  const properties = getFeaturedProperties();
 
   return (
     <section className="section-padding bg-cream">

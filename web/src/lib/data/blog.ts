@@ -1,4 +1,8 @@
-import type { BlogPost } from "@/lib/types/blog";
+import type { BlogPost, BlogPostContent } from "@/lib/types/blog";
+import fs from "fs";
+import path from "path";
+
+const CONTENT_BLOG_DIR = path.join(process.cwd(), "content", "blog");
 
 export const BLOG_POSTS: BlogPost[] = [
   {
@@ -11,7 +15,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Dominique Brousseau",
     category: "Real Estate",
     image:
-      "https://relaxcostarica.com/wp-content/uploads/2024/07/buying-property-jaco-beach.jpg",
+      "https://relaxcostarica.com/wp-content/uploads/2024/06/istockphoto-950510542-612x612-1.jpg",
   },
   {
     slug: "expats-moving-to-costa-rica",
@@ -81,4 +85,19 @@ export function getBlogPostBySlug(slug: string): BlogPost | undefined {
 
 export function getLatestPosts(count = 3): BlogPost[] {
   return BLOG_POSTS.slice(0, count);
+}
+
+function loadBlogContent(slug: string): BlogPostContent | null {
+  const contentPath = path.join(CONTENT_BLOG_DIR, `${slug}.json`);
+  if (!fs.existsSync(contentPath)) return null;
+
+  try {
+    return JSON.parse(fs.readFileSync(contentPath, "utf-8")) as BlogPostContent;
+  } catch {
+    return null;
+  }
+}
+
+export function getBlogPostContent(slug: string): BlogPostContent | null {
+  return loadBlogContent(slug);
 }

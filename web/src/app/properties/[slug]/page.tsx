@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Bed, Bath, Maximize2, MapPin, Phone, MessageCircle, ArrowLeft, Check, Car, Calendar, ExternalLink } from "lucide-react";
-import { FEATURED_PROPERTIES_FALLBACK } from "@/lib/data/properties";
+import { Bed, Bath, Maximize2, MapPin, Phone, MessageCircle, ArrowLeft, Check, Car, Calendar } from "lucide-react";
+import { getAllProperties, getPropertyBySlug } from "@/lib/data/properties";
 import { formatPrice, formatArea } from "@/lib/utils/format";
 import StatusBadge from "@/components/ui/StatusBadge";
 import PropertyCard from "@/components/property/PropertyCard";
+import PropertyMap from "@/components/property/PropertyMap";
+import PropertyDescription from "@/components/property/PropertyDescription";
+import PropertyGallery from "@/components/property/PropertyGallery";
 import type { Metadata } from "next";
 
 interface Props {
@@ -13,7 +16,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const property = FEATURED_PROPERTIES_FALLBACK.find((p) => p.slug === params.slug);
+  const property = getPropertyBySlug(params.slug);
   if (!property) return { title: "Property Not Found" };
   return {
     title: property.title,
@@ -22,14 +25,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export async function generateStaticParams() {
-  return FEATURED_PROPERTIES_FALLBACK.map((p) => ({ slug: p.slug }));
+  return getAllProperties().map((p) => ({ slug: p.slug }));
 }
 
 export default function PropertyDetailPage({ params }: Props) {
-  const property = FEATURED_PROPERTIES_FALLBACK.find((p) => p.slug === params.slug);
+  const property = getPropertyBySlug(params.slug);
   if (!property) notFound();
 
-  const similar = FEATURED_PROPERTIES_FALLBACK
+  const similar = getAllProperties()
     .filter((p) => p.slug !== property.slug && p.categorySlug === property.categorySlug)
     .slice(0, 3);
 
@@ -46,30 +49,9 @@ export default function PropertyDetailPage({ params }: Props) {
         </Link>
       </div>
 
-      {/* Hero image gallery */}
+      {/* Image gallery */}
       <div className="container-page mt-4">
-        <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden aspect-[16/7]">
-          {property.images.slice(0, 5).map((img, i) => (
-            <div
-              key={i}
-              className={`relative bg-neutral-100 ${i === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1"}`}
-            >
-              <Image
-                src={img.src}
-                alt={img.alt || property.title}
-                fill
-                className="object-cover hover:brightness-110 transition-all cursor-pointer"
-                unoptimized
-              />
-            </div>
-          ))}
-          {/* Fill empty slots */}
-          {property.images.length === 0 && (
-            <div className="col-span-4 row-span-2 bg-gradient-to-br from-ocean-100 to-ocean-200 flex items-center justify-center">
-              <span className="text-ocean-400">No images available</span>
-            </div>
-          )}
-        </div>
+        <PropertyGallery images={property.images} title={property.title} />
       </div>
 
       {/* Content */}
@@ -167,7 +149,7 @@ export default function PropertyDetailPage({ params }: Props) {
             {property.description && (
               <div>
                 <h2 className="font-display text-2xl font-semibold text-ocean-900 mb-4">Description</h2>
-                <p className="text-neutral-600 leading-relaxed">{property.description}</p>
+                <PropertyDescription text={property.description} />
               </div>
             )}
 
@@ -185,6 +167,8 @@ export default function PropertyDetailPage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            <PropertyMap property={property} />
           </div>
 
           {/* Sidebar */}
@@ -216,17 +200,6 @@ export default function PropertyDetailPage({ params }: Props) {
                 <Link href="/contact" className="btn-ghost w-full justify-center text-sm">
                   Send a Message
                 </Link>
-                {property.url && property.url !== "#" && (
-                  <a
-                    href={property.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-ghost w-full justify-center text-sm"
-                  >
-                    <ExternalLink size={14} />
-                    View on RE/MAX
-                  </a>
-                )}
               </div>
 
               {/* Agent mini bio */}
@@ -237,7 +210,7 @@ export default function PropertyDetailPage({ params }: Props) {
                     alt="Dominique Brousseau"
                     width={48}
                     height={48}
-                    className="object-cover"
+                    className="object-cover bg-white"
                     unoptimized
                   />
                 </div>

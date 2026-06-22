@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import PropertiesClient from "./PropertiesClient";
-import { FEATURED_PROPERTIES_FALLBACK } from "@/lib/data/properties";
+import { getAllProperties } from "@/lib/data/properties";
 
 export const metadata = {
   title: "Properties for Sale in Jaco Beach, Costa Rica",
@@ -9,6 +9,8 @@ export const metadata = {
 };
 
 export default function PropertiesPage() {
+  const properties = getAllProperties();
+
   return (
     <div className="pt-20 min-h-screen">
       {/* Page Header */}
@@ -21,13 +23,13 @@ export default function PropertiesPage() {
             Properties for Sale
           </h1>
           <p className="text-white/60 mt-3 text-lg">
-            {FEATURED_PROPERTIES_FALLBACK.length}+ listings across the Central Pacific coast
+            {properties.length}+ listings across the Central Pacific coast
           </p>
         </div>
       </div>
 
       <Suspense fallback={<div className="container-page py-20 text-center text-neutral-400">Loading properties…</div>}>
-        <PropertiesClient properties={FEATURED_PROPERTIES_FALLBACK} />
+        <PropertiesClient properties={properties} />
       </Suspense>
     </div>
   );

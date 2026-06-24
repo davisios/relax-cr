@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Bed, Bath, Maximize2, User } from "lucide-react";
 import { formatPrice, formatArea } from "@/lib/utils/format";
 import StatusBadge from "@/components/ui/StatusBadge";
+import PropertyCardImage from "@/components/property/PropertyCardImage";
 import type { Property } from "@/lib/types/property";
 import { cn } from "@/lib/utils/cn";
 
@@ -31,14 +31,7 @@ export default function PropertyCard({ property, className }: PropertyCardProps)
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
         {heroImage ? (
-          <Image
-            src={heroImage.src}
-            alt={heroImage.alt || property.title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            unoptimized
-          />
+          <PropertyCardImage src={heroImage.src} alt={heroImage.alt || ""} title={property.title} />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-ocean-100 to-ocean-200 flex items-center justify-center">
             <span className="text-ocean-400 text-sm">No image</span>

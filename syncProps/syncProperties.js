@@ -37,6 +37,7 @@ const LOCAL_FILES = [
 ];
 
 const OUTPUT_PATH = path.join(__dirname, "..", "web", "properties.json");
+const AUDIT_LOG_PATH = path.join(__dirname, "audit.log");
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 
@@ -258,11 +259,55 @@ function rowToSourceProperty(row) {
   };
 }
 
+// ─── Image checker ────────────────────────────────────────────────────────────
+
+// Cache results so the same URL is only checked once
+const imageCheckCache = new Map();
+
+function imageExists(url) {
+  if (imageCheckCache.has(url)) return Promise.resolve(imageCheckCache.get(url));
+  return new Promise((resolve) => {
+    const req = https.request(url, { method: "HEAD" }, (res) => {
+      const ok = res.statusCode >= 200 && res.statusCode < 400;
+      imageCheckCache.set(url, ok);
+      res.resume();
+      resolve(ok);
+    });
+    req.on("error", () => {
+      imageCheckCache.set(url, false);
+      resolve(false);
+    });
+    req.setTimeout(8000, () => {
+      req.destroy();
+      imageCheckCache.set(url, false);
+      resolve(false);
+    });
+    req.end();
+  });
+}
+
+async function filterValidImages(gallery) {
+  const results = await Promise.all(
+    gallery.map(async (img) => {
+      const ok = await imageExists(img.url);
+      return ok ? img : null;
+    })
+  );
+  return results.filter(Boolean);
+}
+
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
 
-function fetchText(url) {
+function fetchText(url, redirectCount = 0) {
+  if (redirectCount > 5) return Promise.reject(new Error("Too many redirects"));
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
+      if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
+        const location = res.headers["location"];
+        if (!location) return reject(new Error("Redirect with no Location header"));
+        res.resume();
+        return resolve(fetchText(location, redirectCount + 1));
+      }
       let data = "";
       res.on("data", (chunk) => (data += chunk));
       res.on("end", () => resolve(data));
@@ -273,18 +318,28 @@ function fetchText(url) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+function appendAuditLog(entry) {
+  const line = JSON.stringify(entry) + "\n";
+  fs.appendFileSync(AUDIT_LOG_PATH, line, "utf-8");
+}
+
 async function main() {
   const useLocal = process.argv.includes("--local");
+  const runAt = new Date().toISOString();
   const csvTexts = [];
+  const endpointResults = [];
 
   if (useLocal) {
     console.log("📂 Using local CSV files...");
     for (const file of LOCAL_FILES) {
       if (!fs.existsSync(file)) {
         console.warn(`  ⚠️  File not found: ${file}`);
+        endpointResults.push({ source: file, status: "not_found" });
         continue;
       }
-      csvTexts.push(fs.readFileSync(file, "utf-8"));
+      const text = fs.readFileSync(file, "utf-8");
+      csvTexts.push(text);
+      endpointResults.push({ source: path.basename(file), status: "ok", bytes: text.length });
       console.log(`  ✓ Loaded ${path.basename(file)}`);
     }
   } else {
@@ -295,24 +350,29 @@ async function main() {
         const text = await fetchText(url);
         if (!text || text.trim().length === 0) {
           console.warn(`  ⚠️  Empty response for export_id=${exportId}`);
+          endpointResults.push({ exportId, url, status: "empty" });
         } else {
           csvTexts.push(text);
+          endpointResults.push({ exportId, url, status: "ok", bytes: text.length });
           console.log(`  ✓ Fetched export_id=${exportId} (${text.length} bytes)`);
         }
       } catch (err) {
         console.error(`  ✗ Failed export_id=${exportId}:`, err.message);
+        endpointResults.push({ exportId, url, status: "error", error: err.message });
       }
     }
   }
 
   if (csvTexts.length === 0) {
+    const entry = { runAt, mode: useLocal ? "local" : "remote", status: "aborted", reason: "No CSV data loaded", endpoints: endpointResults };
+    appendAuditLog(entry);
     console.error("❌ No CSV data loaded. Aborting.");
     process.exit(1);
   }
 
   // Parse all CSVs and deduplicate by ID
   const seen = new Set();
-  const allProperties = [];
+  const parsed = [];
 
   for (const text of csvTexts) {
     const rows = parseCSV(text);
@@ -324,11 +384,35 @@ async function main() {
       seen.add(id);
 
       const prop = rowToSourceProperty(row);
-      if (prop) allProperties.push(prop);
+      if (prop) parsed.push(prop);
     }
   }
 
-  console.log(`\n✅ Total unique published properties: ${allProperties.length}`);
+  console.log(`\n🔍 Checking images for ${parsed.length} properties...`);
+
+  const allProperties = [];
+  const skippedNoImages = [];
+  let totalRemoved = 0;
+
+  for (const prop of parsed) {
+    const validGallery = await filterValidImages(prop.media.gallery);
+    const removedCount = prop.media.gallery.length - validGallery.length;
+    if (removedCount > 0) totalRemoved += removedCount;
+
+    if (validGallery.length === 0) {
+      skippedNoImages.push({ id: prop.id, slug: prop.slug, title: prop.title });
+      process.stdout.write(`  ✗ No valid images — skipping: ${prop.title}\n`);
+      continue;
+    }
+
+    prop.media.gallery = validGallery;
+    prop.media.featuredImage = validGallery[0];
+    allProperties.push(prop);
+  }
+
+  console.log(`  Removed ${totalRemoved} broken image(s)`);
+  console.log(`  Skipped ${skippedNoImages.length} propert${skippedNoImages.length === 1 ? "y" : "ies"} with no valid images`);
+  console.log(`\n✅ Total properties to write: ${allProperties.length}`);
 
   // Write output
   const output = {
@@ -339,6 +423,20 @@ async function main() {
 
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf-8");
   console.log(`💾 Written → ${OUTPUT_PATH}`);
+
+  // Audit log entry
+  const auditEntry = {
+    runAt,
+    mode: useLocal ? "local" : "remote",
+    status: "success",
+    totalProperties: allProperties.length,
+    brokenImagesRemoved: totalRemoved,
+    skippedNoImages: skippedNoImages.length,
+    skippedProperties: skippedNoImages,
+    endpoints: endpointResults,
+  };
+  appendAuditLog(auditEntry);
+  console.log(`📋 Audit log → ${AUDIT_LOG_PATH}`);
 }
 
 main().catch((err) => {

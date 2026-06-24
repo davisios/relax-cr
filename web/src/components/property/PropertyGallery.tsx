@@ -14,15 +14,19 @@ interface Props {
 export default function PropertyGallery({ images, title }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
+  const [failedSrcs, setFailedSrcs] = useState<Set<string>>(new Set());
+
+  const validImages = images.filter((img) => !failedSrcs.has(img.src));
+  const markFailed = (src: string) => setFailedSrcs((prev) => new Set(prev).add(src));
   const thumbnailsRef = useRef<HTMLDivElement>(null);
 
   const goTo = useCallback(
     (index: number) => {
-      if (images.length === 0) return;
-      const next = (index + images.length) % images.length;
+      if (validImages.length === 0) return;
+      const next = (index + validImages.length) % validImages.length;
       setActiveIndex(next);
     },
-    [images.length],
+    [validImages.length],
   );
 
   const goPrev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
@@ -45,7 +49,7 @@ export default function PropertyGallery({ images, title }: Props) {
     thumb?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }, [activeIndex]);
 
-  if (images.length === 0) {
+  if (validImages.length === 0) {
     return (
       <div className="aspect-[16/9] rounded-2xl bg-gradient-to-br from-ocean-100 to-ocean-200 flex items-center justify-center">
         <span className="text-ocean-400">No images available</span>
@@ -53,7 +57,8 @@ export default function PropertyGallery({ images, title }: Props) {
     );
   }
 
-  const activeImage = images[activeIndex];
+  const safeIndex = Math.min(activeIndex, Math.max(0, validImages.length - 1));
+  const activeImage = validImages[safeIndex];
 
   return (
     <div className="space-y-3">
@@ -67,9 +72,10 @@ export default function PropertyGallery({ images, title }: Props) {
           sizes="(max-width: 1280px) 100vw, 1280px"
           className="object-cover"
           unoptimized
+          onError={() => markFailed(activeImage.src)}
         />
 
-        {images.length > 1 && (
+        {validImages.length > 1 && (
           <>
             <button
               type="button"
@@ -88,7 +94,7 @@ export default function PropertyGallery({ images, title }: Props) {
               <ChevronRight size={22} />
             </button>
             <div className="absolute bottom-4 right-4 rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white">
-              {activeIndex + 1} / {images.length}
+              {activeIndex + 1} / {validImages.length}
             </div>
             <button
               type="button"
@@ -124,7 +130,7 @@ export default function PropertyGallery({ images, title }: Props) {
             <X size={20} />
           </button>
 
-          {images.length > 1 && (
+          {validImages.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); goPrev(); }}
               style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.15)", border: "none", color: "#fff", width: "44px", height: "44px", borderRadius: "999px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -147,7 +153,7 @@ export default function PropertyGallery({ images, title }: Props) {
             />
           </div>
 
-          {images.length > 1 && (
+          {validImages.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); goNext(); }}
               style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.15)", border: "none", color: "#fff", width: "44px", height: "44px", borderRadius: "999px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -156,20 +162,20 @@ export default function PropertyGallery({ images, title }: Props) {
             </button>
           )}
 
-          {images.length > 1 && (
+          {validImages.length > 1 && (
             <div style={{ position: "absolute", bottom: "20px", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,.5)", color: "#fff", fontSize: "13px", fontWeight: 600, padding: "5px 14px", borderRadius: "999px" }}>
-              {activeIndex + 1} / {images.length}
+              {activeIndex + 1} / {validImages.length}
             </div>
           )}
         </div>
       )}
 
-      {images.length > 1 && (
+      {validImages.length > 1 && (
         <div
           ref={thumbnailsRef}
           className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin"
         >
-          {images.map((image, index) => (
+          {validImages.map((image, index) => (
             <button
               key={image.src}
               type="button"
@@ -189,6 +195,7 @@ export default function PropertyGallery({ images, title }: Props) {
                 sizes="112px"
                 className="object-cover"
                 unoptimized
+                onError={() => markFailed(image.src)}
               />
             </button>
           ))}

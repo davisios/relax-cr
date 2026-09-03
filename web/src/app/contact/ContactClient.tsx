@@ -104,7 +104,6 @@ export default function ContactClient() {
                 fill
                 sizes="(max-width: 900px) 100vw, 540px"
                 style={{ objectFit: "cover", objectPosition: "top center" }}
-                unoptimized
               />
             </div>
 

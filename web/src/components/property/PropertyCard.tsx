@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bed, Bath, Maximize2, User } from "lucide-react";
+import { Bed, Bath, Maximize2 } from "lucide-react";
 import { formatPrice, formatArea } from "@/lib/utils/format";
 import StatusBadge from "@/components/ui/StatusBadge";
 import PropertyCardImage from "@/components/property/PropertyCardImage";
@@ -89,12 +89,6 @@ export default function PropertyCard({ property, className }: PropertyCardProps)
           <span className="font-display text-xl font-bold text-ocean-900">
             {formatPrice(property.price)}
           </span>
-          {property.agent && (
-            <span className="flex items-center gap-1 text-xs text-neutral-400">
-              <User size={12} />
-              {property.agent.split(" ")[0]}
-            </span>
-          )}
         </div>
       </div>
     </Link>

@@ -47,7 +47,6 @@ export default function HeroSlideshow() {
             priority={index === 0}
             sizes="100vw"
             className="object-cover object-center"
-            unoptimized
           />
         </div>
       ))}

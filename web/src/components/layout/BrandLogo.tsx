@@ -42,7 +42,6 @@ export default function BrandLogo({
         width={size}
         height={size}
         className="rounded-full bg-white shrink-0"
-        unoptimized
       />
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.05 }}>
         <span

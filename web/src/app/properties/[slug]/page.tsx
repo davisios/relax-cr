@@ -323,7 +323,6 @@ export default function PropertyDetailPage({ params }: Props) {
                     width={48}
                     height={48}
                     className="object-cover bg-white"
-                    unoptimized
                   />
                 </div>
                 <div>

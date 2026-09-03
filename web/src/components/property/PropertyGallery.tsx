@@ -71,7 +71,6 @@ export default function PropertyGallery({ images, title }: Props) {
           priority
           sizes="(max-width: 1280px) 100vw, 1280px"
           className="object-cover"
-          unoptimized
           onError={() => markFailed(activeImage.src)}
         />
 
@@ -149,7 +148,6 @@ export default function PropertyGallery({ images, title }: Props) {
               fill
               sizes="90vw"
               className="object-contain"
-              unoptimized
             />
           </div>
 
@@ -194,7 +192,6 @@ export default function PropertyGallery({ images, title }: Props) {
                 fill
                 sizes="112px"
                 className="object-cover"
-                unoptimized
                 onError={() => markFailed(image.src)}
               />
             </button>

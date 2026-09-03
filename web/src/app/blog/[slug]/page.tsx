@@ -92,7 +92,6 @@ export default function BlogPostPage({ params }: Props) {
               fill
               priority
               className="object-cover"
-              unoptimized
             />
           </div>
         )}

@@ -129,7 +129,6 @@ export default function RentalsExplorer({
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           style={{ objectFit: "cover" }}
-                          unoptimized
                         />
                       )}
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,30,26,.45), transparent 55%)" }} />

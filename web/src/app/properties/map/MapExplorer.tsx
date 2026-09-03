@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Bed, Bath, Maximize2, MapPin, ArrowRight, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -178,12 +179,15 @@ export default function MapExplorer({ listings }: { listings: MapListing[] }) {
             </button>
 
             {selected.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={selected.image.src}
-                alt={selected.image.alt || selected.title}
-                style={{ width: "calc(100% - 40px)", margin: "10px 20px 0", height: "230px", objectFit: "cover", display: "block", background: "#e7f4f0", borderRadius: "14px" }}
-              />
+              <div style={{ position: "relative", margin: "10px 20px 0", height: "230px", background: "#e7f4f0", borderRadius: "14px", overflow: "hidden" }}>
+                <Image
+                  src={selected.image.src}
+                  alt={selected.image.alt || selected.title}
+                  fill
+                  sizes="440px"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
             ) : (
               <div style={{ margin: "10px 20px 0", height: "120px", background: "linear-gradient(135deg, #8fd6cb, #0c6f62)", borderRadius: "14px" }} />
             )}
@@ -268,8 +272,13 @@ export default function MapExplorer({ listings }: { listings: MapListing[] }) {
                 >
                   <span className="map-card__image">
                     {listing.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={listing.image.src} alt={listing.image.alt || listing.title} loading="lazy" />
+                      <Image
+                        src={listing.image.src}
+                        alt={listing.image.alt || listing.title}
+                        fill
+                        sizes="220px"
+                        style={{ objectFit: "cover" }}
+                      />
                     ) : (
                       <span className="map-card__placeholder" />
                     )}

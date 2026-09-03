@@ -1,23 +1,13 @@
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { ChevronDown } from "lucide-react";
 import PropertySearchWidget from "./PropertySearchWidget";
 import HeroSlideshow from "./HeroSlideshow";
-import { CanvasErrorBoundary } from "@/components/three/CanvasErrorBoundary";
-
-const HeroScene = dynamic(() => import("@/components/three/HeroScene"), { ssr: false });
 
 export default function HeroSection() {
   return (
     <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
       <HeroSlideshow />
       <div className="absolute inset-0 bg-hero-gradient" />
-
-      <div className="absolute inset-0 z-[5] pointer-events-none">
-        <CanvasErrorBoundary fallback={null}>
-          <HeroScene />
-        </CanvasErrorBoundary>
-      </div>
 
       <div className="relative z-10 w-full container-page px-4 py-28 md:py-32 flex flex-col items-center justify-center text-center">
         <p className="font-sans text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-sand-300 mb-5 max-w-3xl">

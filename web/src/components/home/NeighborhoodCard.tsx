@@ -1,20 +1,12 @@
-"use client";
-
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import type { Neighborhood } from "@/lib/types/neighborhood";
-import { useTilt } from "@/lib/hooks/useTilt";
 
 export default function NeighborhoodCard({ neighborhood }: { neighborhood: Neighborhood }) {
-  const { ref, style, handlers } = useTilt<HTMLAnchorElement>();
-
   return (
     <Link
-      ref={ref}
       href={`/neighborhoods/${neighborhood.slug}`}
       className="group relative aspect-[3/4] rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-300"
-      style={style}
-      {...handlers}
     >
       {/* Background image */}
       <div

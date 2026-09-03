@@ -7,15 +7,15 @@ const SLIDE_DURATION_MS = 5000;
 const FADE_DURATION_MS = 500;
 
 const HERO_SLIDES = [
-  "https://relaxcostarica.com/wp-content/uploads/2022/01/Jaco.jpg",
-  "https://relaxcostarica.com/wp-content/uploads/2022/05/Faro-Escondido-49.jpg",
-  "https://relaxcostarica.com/wp-content/uploads/2022/01/Herradura-Costa-Rica.jpg",
-  "https://relaxcostarica.com/wp-content/uploads/2021/11/Sunset-at-Jaco-Costa-Rica.jpg",
-  "https://relaxcostarica.com/wp-content/uploads/2021/11/Los-Suenos-Marina-Costa-Rica.jpg",
-  "https://relaxcostarica.com/wp-content/uploads/2022/01/Jaco-Beach-Sunset.jpg",
-  "https://relaxcostarica.com/wp-content/uploads/2022/05/Faro-Escondido-72.jpg",
-  "https://relaxcostarica.com/wp-content/uploads/2022/01/Esterillos-Costa-Rica.jpg",
-  "https://relaxcostarica.com/wp-content/uploads/2022/01/Bejuco-Costa-Rica.jpg",
+  { src: "https://relaxcostarica.com/wp-content/uploads/2022/01/Jaco.jpg", alt: "Aerial view of Jacó Beach and town, Costa Rica" },
+  { src: "https://relaxcostarica.com/wp-content/uploads/2022/05/Faro-Escondido-49.jpg", alt: "Faro Escondido oceanfront community on the Central Pacific coast" },
+  { src: "https://relaxcostarica.com/wp-content/uploads/2022/01/Herradura-Costa-Rica.jpg", alt: "Herradura Bay and its sheltered beach, Costa Rica" },
+  { src: "https://relaxcostarica.com/wp-content/uploads/2021/11/Sunset-at-Jaco-Costa-Rica.jpg", alt: "Sunset over the Pacific at Jacó Beach, Costa Rica" },
+  { src: "https://relaxcostarica.com/wp-content/uploads/2021/11/Los-Suenos-Marina-Costa-Rica.jpg", alt: "Los Sueños Marina in Herradura, Costa Rica" },
+  { src: "https://relaxcostarica.com/wp-content/uploads/2022/01/Jaco-Beach-Sunset.jpg", alt: "Palm trees at sunset on Jacó Beach" },
+  { src: "https://relaxcostarica.com/wp-content/uploads/2022/05/Faro-Escondido-72.jpg", alt: "Ocean view from the Faro Escondido hills, Costa Rica" },
+  { src: "https://relaxcostarica.com/wp-content/uploads/2022/01/Esterillos-Costa-Rica.jpg", alt: "Quiet sands of Esterillos beach, Costa Rica" },
+  { src: "https://relaxcostarica.com/wp-content/uploads/2022/01/Bejuco-Costa-Rica.jpg", alt: "Bejuco beach on Costa Rica's Central Pacific coast" },
 ];
 
 export default function HeroSlideshow() {
@@ -31,9 +31,9 @@ export default function HeroSlideshow() {
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {HERO_SLIDES.map((src, index) => (
+      {HERO_SLIDES.map((slide, index) => (
         <div
-          key={src}
+          key={slide.src}
           className="absolute inset-0"
           style={{
             opacity: index === activeIndex ? 1 : 0,
@@ -41,8 +41,8 @@ export default function HeroSlideshow() {
           }}
         >
           <Image
-            src={src}
-            alt=""
+            src={slide.src}
+            alt={slide.alt}
             fill
             priority={index === 0}
             sizes="100vw"

@@ -1,4 +1,11 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import { Trophy, Star, Award, Users } from "lucide-react";
+import { CanvasErrorBoundary } from "@/components/three/CanvasErrorBoundary";
+import AwardIcon from "@/components/three/AwardIcon";
+
+const AwardsViewport = dynamic(() => import("@/components/three/AwardsViewport"), { ssr: false });
 
 const AWARDS = [
   { icon: Trophy, title: "Platinum Club", subtitle: "2022 – 2023" },
@@ -16,7 +23,10 @@ const STATS = [
 
 export default function WhyChooseMe() {
   return (
-    <section className="section-padding bg-sand-100 overflow-hidden">
+    <section className="section-padding bg-sand-100">
+      <CanvasErrorBoundary fallback={null}>
+        <AwardsViewport />
+      </CanvasErrorBoundary>
       <div className="container-page">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
@@ -48,7 +58,7 @@ export default function WhyChooseMe() {
               className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-card"
             >
               <div className="w-12 h-12 rounded-full bg-sand-300 flex items-center justify-center mb-4">
-                <Icon size={22} className="text-sand-700" />
+                <AwardIcon icon={Icon} />
               </div>
               <h3 className="font-display text-lg font-semibold text-ocean-900">
                 {title}

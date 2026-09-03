@@ -2,159 +2,185 @@
 /**
  * syncProperties.js
  *
- * Downloads CSV exports from RE/MAX OCR and rebuilds web/properties.json.
+ * Rebuilds web/properties.json from the remax-ocr.com public WordPress REST API.
+ * Covers every published listing on the office site, regardless of agent —
+ * no per-agent CSV exports to maintain.
+ *
+ * Sources per listing:
+ *   - /wp-json/wp/v2/estate_property  → id, slug, title, content, taxonomies
+ *   - /wp-json/wp/v2/media?parent=ID  → gallery photos with alt text
+ *   - the listing page HTML           → price, beds/baths, sizes, year,
+ *                                       coordinates, agent (not in the REST API)
  *
  * Run manually every Monday:
  *   node syncProps/syncProperties.js
- *
- * Or with local CSV files (for testing):
- *   node syncProps/syncProperties.js --local
  */
 
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
 
-// ─── Endpoints ───────────────────────────────────────────────────────────────
-
-const ENDPOINTS = [
-  "https://remax-ocr.com/wp-load.php?security_key=66deda82f44ef419&export_id=65&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=04e548c0c223f60d&export_id=66&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=90784ee0cbbc12b0&export_id=71&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=194350ca8ac7255f&export_id=69&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=b34d16a13e42c475&export_id=70&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=525b9608bdc80b84&export_id=68&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=3fa77471ed07f8aa&export_id=67&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=538041c95aca0206&export_id=72&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=bdf55e47aae54edb&export_id=56&action=get_data",
-  "https://remax-ocr.com/wp-load.php?security_key=65a9df4893720098&export_id=73&action=get_data",
-];
-
-// Local CSV files used when --local flag is passed
-const LOCAL_FILES = [
-  path.join(__dirname, "..", "export1.csv"),
-  path.join(__dirname, "..", "export2.csv"),
-];
-
+const BASE = "https://remax-ocr.com";
 const OUTPUT_PATH = path.join(__dirname, "..", "web", "properties.json");
 const AUDIT_LOG_PATH = path.join(__dirname, "audit.log");
+const CONCURRENCY = 6;
 
-// ─── CSV parser ───────────────────────────────────────────────────────────────
+// ─── HTTP helpers ─────────────────────────────────────────────────────────────
 
-function parseCSV(text) {
-  // Strip BOM
-  const content = text.replace(/^﻿/, "");
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < content.length; i++) {
-    const ch = content[i];
-    const next = content[i + 1];
-
-    if (inQuotes) {
-      if (ch === '"' && next === '"') {
-        field += '"';
-        i++;
-      } else if (ch === '"') {
-        inQuotes = false;
-      } else {
-        field += ch;
+function fetchText(url, redirectCount = 0) {
+  if (redirectCount > 5) return Promise.reject(new Error("Too many redirects"));
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { "User-Agent": "Mozilla/5.0 (relaxcostarica sync)" } }, (res) => {
+      if ([301, 302, 307, 308].includes(res.statusCode)) {
+        const location = res.headers["location"];
+        if (!location) return reject(new Error("Redirect with no Location header"));
+        res.resume();
+        return resolve(fetchText(new URL(location, url).href, redirectCount + 1));
       }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        row.push(field);
-        field = "";
-      } else if (ch === "\n") {
-        row.push(field);
-        field = "";
-        if (row.some((c) => c.trim())) rows.push(row);
-        row = [];
-      } else if (ch === "\r") {
-        // skip
-      } else {
-        field += ch;
+      if (res.statusCode >= 400) {
+        res.resume();
+        return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
       }
-    }
-  }
-  if (field || row.length) {
-    row.push(field);
-    if (row.some((c) => c.trim())) rows.push(row);
-  }
-
-  if (rows.length < 2) return [];
-
-  const headers = rows[0].map((h) => h.trim());
-  return rows.slice(1).map((cells) => {
-    const obj = {};
-    headers.forEach((h, i) => {
-      obj[h] = cells[i] !== undefined ? cells[i].trim() : "";
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => resolve(data));
+      res.on("error", reject);
     });
-    return obj;
+    req.on("error", reject);
+    req.setTimeout(30000, () => {
+      req.destroy();
+      reject(new Error(`Timeout for ${url}`));
+    });
   });
 }
 
-// ─── Feature flags → feature names ──────────────────────────────────────────
-
-const FEATURE_FLAG_MAP = {
-  pets_allowed: "Pet friendly",
-  seller_financing: "Seller Financing",
-  furnished: "Furnished",
-  not_furnished: "Not Furnished",
-  air_conditioning_central: "Central A/C",
-  garden: "Garden",
-  storage: "Storage",
-  washer_and_dryer: "Washer and Dryer",
-  "wi-fi": "Wi-fi",
-  balcony: "Balcony",
-  deck: "Deck",
-  fenced_yard: "Fenced Yard",
-  front_yard: "Front Yard",
-  back_yard: "Backyard",
-  gym: "Gym",
-  gated_community: "Gated Community",
-  jacuzzi: "Jacuzzi",
-  maid_room: "Maid Room",
-  elevator: "Elevator",
-  penthouse: "Penthouse",
-  great_view: "Great View",
-  close_to_town: "Close to town",
-  walk_to_beach: "Walk to Beach",
-  beachfront: "Beachfront",
-  ocean_view: "Ocean View",
-  "24_hour_security": "24 hour security",
-};
-
-function extractFeatures(row) {
-  const features = [];
-
-  // From boolean flag columns
-  for (const [col, name] of Object.entries(FEATURE_FLAG_MAP)) {
-    const val = (row[col] || "").toLowerCase();
-    if (val === "1" || val === "yes" || val === "true") {
-      features.push(name);
+/** fetchText with retries — the office server occasionally times out under load. */
+async function fetchTextRetry(url, tries = 3) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fetchText(url);
+    } catch (err) {
+      if (attempt >= tries || String(err.message).includes("HTTP 4")) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
     }
   }
-
-  // From "Features & Amenities" comma-separated column (fallback / extra)
-  const amenities = row["Features & Amenities"] || "";
-  if (amenities) {
-    amenities.split(",").forEach((a) => {
-      const name = a.trim();
-      if (name && !features.includes(name)) features.push(name);
-    });
-  }
-
-  return features.length ? features : undefined;
 }
 
-// ─── Category mapping ─────────────────────────────────────────────────────────
+async function fetchJson(url) {
+  return JSON.parse(await fetchTextRetry(url));
+}
 
-function inferCategory(row) {
-  const cat = (row["Categories"] || "").toLowerCase();
+/** Fetch every page of a paginated REST collection. */
+async function fetchAllPages(pathAndQuery) {
+  const results = [];
+  for (let page = 1; ; page++) {
+    const sep = pathAndQuery.includes("?") ? "&" : "?";
+    let batch;
+    try {
+      batch = await fetchJson(`${BASE}${pathAndQuery}${sep}per_page=100&page=${page}`);
+    } catch (err) {
+      // WP returns 400 when paging past the last page
+      if (String(err.message).includes("HTTP 400")) break;
+      throw err;
+    }
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    results.push(...batch);
+    if (batch.length < 100) break;
+  }
+  return results;
+}
+
+/** Run tasks with a fixed concurrency limit. */
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+// ─── HTML → text ──────────────────────────────────────────────────────────────
+
+function decodeEntities(text) {
+  return text
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/&amp;/g, "&")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#8211;|&ndash;/g, "–")
+    .replace(/&#8217;|&rsquo;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function htmlToText(html) {
+  if (!html) return "";
+  return decodeEntities(
+    html
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n\n")
+      .replace(/<\/(h[1-6]|li|div)>/gi, "\n")
+      .replace(/<[^>]+>/g, ""),
+  )
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// ─── Listing page scraping (fields the REST API does not expose) ─────────────
+
+function pageDetail(html, label) {
+  let m = html.match(new RegExp(`<strong>\\s*${label}\\s*:?\\s*</strong>\\s*([^<]+)`, "i"));
+  if (m && m[1].trim()) return decodeEntities(m[1].trim());
+  m = html.match(new RegExp(`${label}\\s*:\\s*</[^>]+>\\s*<[^>]+>([^<]+)`, "i"));
+  return m ? decodeEntities(m[1].trim()) : "";
+}
+
+function parseNumber(text) {
+  const m = String(text).replace(/,/g, "").match(/[\d.]+/);
+  return m ? parseFloat(m[0]) : null;
+}
+
+function scrapeListingPage(html) {
+  const priceMatch = html.match(/price_area\">\s*\$?\s*([\d,]+)/);
+  const latMatch = html.match(/"general_latitude":"(-?[\d.]+)"/);
+  const lngMatch = html.match(/"general_longitude":"(-?[\d.]+)"/);
+  const agentMatch = html.match(/\/agents\/([a-z0-9-]+)/);
+
+  return {
+    price: priceMatch ? parseFloat(priceMatch[1].replace(/,/g, "")) : null,
+    bedrooms: parseNumber(pageDetail(html, "Bedrooms")),
+    bathrooms: parseNumber(pageDetail(html, "Bathrooms")),
+    size: parseNumber(pageDetail(html, "Property Size")),
+    lotSize: parseNumber(pageDetail(html, "Lot Size")),
+    year: parseNumber(pageDetail(html, "Year Built")),
+    garages: pageDetail(html, "Garages") || null,
+    address: pageDetail(html, "Address") || null,
+    latitude: latMatch ? parseFloat(latMatch[1]) : null,
+    longitude: lngMatch ? parseFloat(lngMatch[1]) : null,
+    agentSlug: agentMatch ? agentMatch[1] : null,
+  };
+}
+
+function agentNameFromSlug(slug) {
+  if (!slug) return "";
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+// ─── Category / status mapping (same targets as before) ──────────────────────
+
+function inferCategory(name) {
+  const cat = (name || "").toLowerCase();
   if (cat.includes("condo") || cat.includes("apartment")) return { name: "Condo | Apartment", slug: "condo-apartment" };
   if (cat.includes("lot") || cat.includes("land") || cat.includes("vacant")) return { name: "Lot | Vacant Land", slug: "lot-vacant-land" };
   if (cat.includes("multi") || cat.includes("duplex")) return { name: "Multi-family | Duplex", slug: "multi-family-duplex-triplex" };
@@ -163,105 +189,18 @@ function inferCategory(row) {
   return { name: "House | Villa", slug: "house-villa" };
 }
 
-// ─── Slug from permalink ──────────────────────────────────────────────────────
-
-function slugFromPermalink(permalink) {
-  return permalink
-    .replace(/^https?:\/\/[^/]+\/properties\//, "")
-    .replace(/\/$/, "")
-    .replace(/[^a-z0-9-]/gi, "-")
-    .toLowerCase() || String(Math.random()).slice(2);
-}
-
-// ─── Image URL list from cell ─────────────────────────────────────────────────
-
-function parseImages(cell) {
-  if (!cell) return [];
-  return cell
-    .split(/[\n,|]+/)
-    .map((u) => u.trim())
-    .filter((u) => u.startsWith("http"));
-}
-
-// ─── Map one CSV row → SourceProperty shape ───────────────────────────────────
-
-function rowToSourceProperty(row) {
-  const status = (row["Status"] || "").toLowerCase();
-  if (status !== "publish") return null;
-
-  const id = parseInt(row["ID"]) || 0;
-  const permalink = row["Permalink"] || "";
-  const slug = slugFromPermalink(permalink);
-  const category = inferCategory(row);
-  const price = parseFloat(row["property_price"]) || undefined;
-  const images = parseImages(row["Image URL"]);
-  const features = extractFeatures(row);
-
-  const cityRaw = row["City"] || "";
-  const citySlug = cityRaw.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") || undefined;
-
-  const areaRaw = row["Neighborhood"] || "";
-
-  const statusSlug = (() => {
-    const s = (row["Property Status"] || "").toLowerCase();
-    if (s.includes("sold")) return "sold";
-    if (s.includes("contract")) return "in-contract";
-    if (s.includes("reduced")) return "recently-reduced";
-    if (s.includes("exclusive")) return "exclusive";
-    return "for-sale";
-  })();
-
-  return {
-    id,
-    slug,
-    url: permalink,
-    title: row["Title"] || "",
-    status: "publish",
-    author: `${row["Author First Name"] || ""} ${row["Author Last Name"] || ""}`.trim() || "Dominique Brousseau",
-    dates: {},
-    content: {
-      description: null,
-      body: row["Content"] || null,
-      excerpt: null,
-    },
-    taxonomy: {
-      action: { name: row["Action"] || "For Sale", slug: "for-sale" },
-      category: { name: category.name, slug: category.slug },
-      city: cityRaw ? { name: cityRaw, slug: citySlug } : null,
-      area: areaRaw ? { name: areaRaw, slug: areaRaw.toLowerCase().replace(/\s+/g, "-") } : null,
-      status: { name: row["Property Status"] || "For Sale", slug: statusSlug },
-      features: (features || []).map((f) => ({ name: f, slug: f.toLowerCase().replace(/\s+/g, "-") })),
-    },
-    pricing: {
-      property_price: price || 0,
-    },
-    details: {
-      property_size: parseFloat(row["property_size"]) || null,
-      property_lot_size: parseFloat(row["property_lot_size"]) || null,
-      property_bedrooms: parseFloat(row["property_bedrooms"]) || null,
-      property_bathrooms: parseFloat(row["property_bathrooms"]) || null,
-      property_year: parseInt(row["property-year"]) || null,
-      property_garage: row["property-garage"] || null,
-      stories: parseInt(row["stories"]) || null,
-    },
-    location: {
-      property_address: row["property_address"] || null,
-      property_zip: row["property_zip"] || null,
-      property_country: "Costa Rica",
-      property_latitude: parseFloat(row["property_latitude"]) || null,
-      property_longitude: parseFloat(row["property_longitude"]) || null,
-    },
-    flags: {},
-    media: {
-      featuredImage: images[0] ? { id: 0, url: images[0], title: "", alt: "" } : null,
-      gallery: images.map((url) => ({ id: 0, url, title: "", alt: "" })),
-    },
-  };
+function statusSlugFromName(name) {
+  const s = (name || "").toLowerCase();
+  if (s.includes("rental")) return "rental";
+  if (s.includes("sold")) return "sold";
+  if (s.includes("contract")) return "in-contract";
+  if (s.includes("reduced")) return "recently-reduced";
+  if (s.includes("exclusive")) return "exclusive";
+  return "for-sale";
 }
 
 // ─── Image checker ────────────────────────────────────────────────────────────
 
-// Cache results so the same URL is only checked once
 const imageCheckCache = new Map();
 
 function imageExists(url) {
@@ -288,154 +227,174 @@ function imageExists(url) {
 
 async function filterValidImages(gallery) {
   const results = await Promise.all(
-    gallery.map(async (img) => {
-      const ok = await imageExists(img.url);
-      return ok ? img : null;
-    })
+    gallery.map(async (img) => ((await imageExists(img.url)) ? img : null)),
   );
   return results.filter(Boolean);
-}
-
-// ─── Fetch helper ─────────────────────────────────────────────────────────────
-
-function fetchText(url, redirectCount = 0) {
-  if (redirectCount > 5) return Promise.reject(new Error("Too many redirects"));
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
-        const location = res.headers["location"];
-        if (!location) return reject(new Error("Redirect with no Location header"));
-        res.resume();
-        return resolve(fetchText(location, redirectCount + 1));
-      }
-      let data = "";
-      res.on("data", (chunk) => (data += chunk));
-      res.on("end", () => resolve(data));
-      res.on("error", reject);
-    }).on("error", reject);
-  });
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 function appendAuditLog(entry) {
-  const line = JSON.stringify(entry) + "\n";
-  fs.appendFileSync(AUDIT_LOG_PATH, line, "utf-8");
+  fs.appendFileSync(AUDIT_LOG_PATH, JSON.stringify(entry) + "\n", "utf-8");
 }
 
+const TAXONOMIES = ["property_category", "property_city", "property_area", "property_features", "property_status"];
+
 async function main() {
-  const useLocal = process.argv.includes("--local");
   const runAt = new Date().toISOString();
-  const csvTexts = [];
-  const endpointResults = [];
 
-  if (useLocal) {
-    console.log("📂 Using local CSV files...");
-    for (const file of LOCAL_FILES) {
-      if (!fs.existsSync(file)) {
-        console.warn(`  ⚠️  File not found: ${file}`);
-        endpointResults.push({ source: file, status: "not_found" });
-        continue;
-      }
-      const text = fs.readFileSync(file, "utf-8");
-      csvTexts.push(text);
-      endpointResults.push({ source: path.basename(file), status: "ok", bytes: text.length });
-      console.log(`  ✓ Loaded ${path.basename(file)}`);
-    }
-  } else {
-    console.log("🌐 Fetching from RE/MAX endpoints...");
-    for (const url of ENDPOINTS) {
-      const exportId = new URL(url).searchParams.get("export_id");
-      try {
-        const text = await fetchText(url);
-        if (!text || text.trim().length === 0) {
-          console.warn(`  ⚠️  Empty response for export_id=${exportId}`);
-          endpointResults.push({ exportId, url, status: "empty" });
-        } else {
-          csvTexts.push(text);
-          endpointResults.push({ exportId, url, status: "ok", bytes: text.length });
-          console.log(`  ✓ Fetched export_id=${exportId} (${text.length} bytes)`);
-        }
-      } catch (err) {
-        console.error(`  ✗ Failed export_id=${exportId}:`, err.message);
-        endpointResults.push({ exportId, url, status: "error", error: err.message });
-      }
-    }
+  console.log("🏷  Fetching taxonomy terms...");
+  const termMaps = {};
+  for (const tax of TAXONOMIES) {
+    const terms = await fetchAllPages(`/wp-json/wp/v2/${tax}?_fields=id,name`);
+    termMaps[tax] = new Map(terms.map((t) => [t.id, decodeEntities(t.name)]));
+    console.log(`  ✓ ${tax}: ${terms.length} terms`);
   }
+  const termName = (tax, ids) => (ids && ids.length ? termMaps[tax].get(ids[0]) || null : null);
 
-  if (csvTexts.length === 0) {
-    const entry = { runAt, mode: useLocal ? "local" : "remote", status: "aborted", reason: "No CSV data loaded", endpoints: endpointResults };
-    appendAuditLog(entry);
-    console.error("❌ No CSV data loaded. Aborting.");
-    process.exit(1);
-  }
+  console.log("🌐 Fetching all published listings from the REST API...");
+  const posts = await fetchAllPages(
+    "/wp-json/wp/v2/estate_property?_fields=id,slug,link,title,content,excerpt,date,modified," + TAXONOMIES.join(","),
+  );
+  console.log(`  ✓ ${posts.length} published listings`);
 
-  // Parse all CSVs and deduplicate by ID
-  const seen = new Set();
-  const parsed = [];
-
-  for (const text of csvTexts) {
-    const rows = parseCSV(text);
-    console.log(`  Parsed ${rows.length} rows`);
-
-    for (const row of rows) {
-      const id = row["ID"];
-      if (!id || seen.has(id)) continue;
-      seen.add(id);
-
-      const prop = rowToSourceProperty(row);
-      if (prop) parsed.push(prop);
-    }
-  }
-
-  console.log(`\n🔍 Checking images for ${parsed.length} properties...`);
-
-  const allProperties = [];
+  console.log(`📄 Fetching galleries and listing pages (${CONCURRENCY} at a time)...`);
+  let done = 0;
+  const failures = [];
+  const skippedRentals = [];
   const skippedNoImages = [];
   let totalRemoved = 0;
+  const allProperties = [];
 
-  for (const prop of parsed) {
+  const mapped = await mapWithConcurrency(posts, CONCURRENCY, async (post) => {
+    try {
+      const statusName = termName("property_status", post.property_status);
+      const statusSlug = statusSlugFromName(statusName);
+      if (statusSlug === "rental") {
+        skippedRentals.push({ id: post.id, slug: post.slug });
+        return null;
+      }
+
+      const [mediaRaw, pageHtml] = await Promise.all([
+        fetchAllPages(`/wp-json/wp/v2/media?parent=${post.id}&_fields=source_url,alt_text,title`),
+        fetchTextRetry(post.link),
+      ]);
+      const scraped = scrapeListingPage(pageHtml);
+
+      const gallery = mediaRaw
+        .filter((m) => m.source_url && /\.(jpe?g|png|webp)$/i.test(m.source_url))
+        .map((m) => ({
+          id: 0,
+          url: m.source_url,
+          title: decodeEntities((m.title && m.title.rendered) || ""),
+          alt: decodeEntities(m.alt_text || ""),
+        }));
+
+      const categoryName = termName("property_category", post.property_category);
+      const category = inferCategory(categoryName);
+      const cityName = termName("property_city", post.property_city);
+      const areaName = termName("property_area", post.property_area);
+      const features = (post.property_features || [])
+        .map((id) => termMaps.property_features.get(id))
+        .filter(Boolean);
+
+      return {
+        id: post.id,
+        slug: post.slug,
+        url: post.link,
+        title: decodeEntities(post.title.rendered || ""),
+        status: "publish",
+        author: agentNameFromSlug(scraped.agentSlug) || "Dominique Brousseau",
+        dates: { published: post.date, modified: post.modified },
+        content: {
+          description: null,
+          body: htmlToText(post.content.rendered) || null,
+          excerpt: htmlToText(post.excerpt.rendered) || null,
+        },
+        taxonomy: {
+          action: { name: "For Sale", slug: "for-sale" },
+          category: { name: category.name, slug: category.slug },
+          city: cityName ? { name: cityName, slug: cityName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") } : null,
+          area: areaName ? { name: areaName, slug: areaName.toLowerCase().replace(/\s+/g, "-") } : null,
+          status: { name: statusName || "For Sale", slug: statusSlug },
+          features: features.map((f) => ({ name: f, slug: f.toLowerCase().replace(/\s+/g, "-") })),
+        },
+        pricing: { property_price: scraped.price || 0 },
+        details: {
+          property_size: scraped.size,
+          property_lot_size: scraped.lotSize,
+          property_bedrooms: scraped.bedrooms,
+          property_bathrooms: scraped.bathrooms,
+          property_year: scraped.year,
+          property_garage: scraped.garages,
+          stories: null,
+        },
+        location: {
+          property_address: scraped.address,
+          property_zip: null,
+          property_country: "Costa Rica",
+          property_latitude: scraped.latitude,
+          property_longitude: scraped.longitude,
+        },
+        flags: {},
+        media: {
+          featuredImage: gallery[0] || null,
+          gallery,
+        },
+      };
+    } catch (err) {
+      failures.push({ id: post.id, slug: post.slug, error: err.message });
+      return null;
+    } finally {
+      done++;
+      if (done % 50 === 0) console.log(`  ... ${done}/${posts.length}`);
+    }
+  });
+
+  console.log(`🔍 Validating images...`);
+  for (const prop of mapped) {
+    if (!prop) continue;
     const validGallery = await filterValidImages(prop.media.gallery);
-    const removedCount = prop.media.gallery.length - validGallery.length;
-    if (removedCount > 0) totalRemoved += removedCount;
+    totalRemoved += prop.media.gallery.length - validGallery.length;
 
     if (validGallery.length === 0) {
       skippedNoImages.push({ id: prop.id, slug: prop.slug, title: prop.title });
-      process.stdout.write(`  ✗ No valid images — skipping: ${prop.title}\n`);
       continue;
     }
-
     prop.media.gallery = validGallery;
     prop.media.featuredImage = validGallery[0];
     allProperties.push(prop);
   }
 
   console.log(`  Removed ${totalRemoved} broken image(s)`);
-  console.log(`  Skipped ${skippedNoImages.length} propert${skippedNoImages.length === 1 ? "y" : "ies"} with no valid images`);
+  console.log(`  Skipped ${skippedRentals.length} rental(s), ${skippedNoImages.length} with no valid images, ${failures.length} failed`);
   console.log(`\n✅ Total properties to write: ${allProperties.length}`);
 
-  // Write output
+  if (allProperties.length < 100) {
+    appendAuditLog({ runAt, mode: "rest", status: "aborted", reason: `Only ${allProperties.length} properties — refusing to overwrite`, failures });
+    console.error("❌ Suspiciously few properties. Not overwriting properties.json.");
+    process.exit(1);
+  }
+
   const output = {
-    export: { generatedAt: new Date().toISOString(), sources: useLocal ? LOCAL_FILES : ENDPOINTS },
+    export: { generatedAt: new Date().toISOString(), sources: [`${BASE}/wp-json/wp/v2/estate_property`] },
     stats: { total: allProperties.length },
     properties: allProperties,
   };
-
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf-8");
   console.log(`💾 Written → ${OUTPUT_PATH}`);
 
-  // Audit log entry
-  const auditEntry = {
+  appendAuditLog({
     runAt,
-    mode: useLocal ? "local" : "remote",
+    mode: "rest",
     status: "success",
     totalProperties: allProperties.length,
     brokenImagesRemoved: totalRemoved,
+    skippedRentals: skippedRentals.length,
     skippedNoImages: skippedNoImages.length,
     skippedProperties: skippedNoImages,
-    endpoints: endpointResults,
-  };
-  appendAuditLog(auditEntry);
+    failures,
+  });
   console.log(`📋 Audit log → ${AUDIT_LOG_PATH}`);
 }
 

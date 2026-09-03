@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Top Restaurants in Jacó",
   description: "The best places to eat in Jacó Beach, Costa Rica — from fresh seafood to international fusion and authentic Indian cuisine.",
+  alternates: { canonical: "/visit-jaco/restaurants" },
 };
 
 const RESTAURANTS = [
@@ -147,6 +148,8 @@ export default function RestaurantsPage() {
                 {r.images.map((src, idx) => (
                   <div
                     key={idx}
+                    role="img"
+                    aria-label={`${r.name} restaurant in Jacó, Costa Rica`}
                     style={{
                       flex: "1 1 260px",
                       height: "260px",

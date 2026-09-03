@@ -81,3 +81,21 @@
 .embla { overflow: hidden; }
 .embla__container { display: flex; }
 .embla__slide { flex: 0 0 100%; min-width: 0; }
+
+/* Fixed CTA bar — mobile and tablet only */
+.mobile-sticky-cta {
+  display: grid;
+}
+
+@media (max-width: 1023px) {
+  body {
+    /* Leave room for the fixed CTA bar */
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobile-sticky-cta {
+    display: none;
+  }
+}

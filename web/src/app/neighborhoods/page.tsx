@@ -3,8 +3,9 @@ import { NEIGHBORHOODS } from "@/lib/data/neighborhoods";
 import NeighborhoodsIndexGrid from "./NeighborhoodsGrid";
 
 export const metadata: Metadata = {
-  title: "Neighborhoods",
+  title: "Jacó Beach Area Neighborhoods & Where to Buy",
   description: "Explore Jacó Beach neighborhoods — find the area that fits your lifestyle and budget on Costa Rica's Central Pacific coast.",
+  alternates: { canonical: "/neighborhoods" },
 };
 
 export default function NeighborhoodsIndexPage() {

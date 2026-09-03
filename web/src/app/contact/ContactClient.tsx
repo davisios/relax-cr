@@ -47,7 +47,7 @@ const SOCIAL = [
   },
 ];
 
-export default function ContactPage() {
+export default function ContactClient() {
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {

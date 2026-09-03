@@ -5,9 +5,10 @@ import PropertyValuationClient from "./PropertyValuationClient";
 const page = getPropertyValuationPage();
 
 export const metadata: Metadata = {
-  title: "Property Valuation",
+  title: "Free Property Valuation in Jaco Beach",
   description:
     "Do you want to see how much your property is worth? Request a free property estimation from Dominique Brousseau, Jaco Beach real estate agent.",
+  alternates: { canonical: "/property-valuation" },
 };
 
 export default function PropertyValuationPage() {

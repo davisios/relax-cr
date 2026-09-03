@@ -16,26 +16,26 @@ const FOOTER_LINKS = {
     { label: "Condos & Apartments", href: "/properties?type=condo-apartment" },
     { label: "Vacant Lots & Land", href: "/properties?type=lot-vacant-land" },
     { label: "Multi-Family", href: "/properties?type=multi-family-duplex-triplex" },
-    { label: "Vacation Rentals", href: "/vacation-rentals" },
+    { label: "Vacation Rentals", href: "/visit-jaco/vacation-rentals" },
   ],
   Explore: [
     { label: "Neighborhoods", href: "/neighborhoods" },
     { label: "Jaco Beach", href: "/neighborhoods/jaco" },
     { label: "Hermosa Beach", href: "/neighborhoods/hermosa-beach" },
-    { label: "Top Restaurants", href: "/restaurants" },
-    { label: "Tours & Activities", href: "/tours" },
+    { label: "Top Restaurants", href: "/visit-jaco/restaurants" },
+    { label: "Tours & Activities", href: "/visit-jaco/tours" },
   ],
   Services: [
     { label: "Property Search", href: "/properties" },
     { label: "Property Valuation", href: "/property-valuation" },
-    { label: "Meet Dominique", href: "/agent" },
+    { label: "Meet Dominique", href: "/contact" },
     { label: "Real Estate FAQs", href: "/faq" },
     { label: "Blog", href: "/blog" },
   ],
-  Legal: [
-    { label: "Terms of Use", href: "/terms" },
-    { label: "Privacy Policy", href: "/privacy" },
+  More: [
+    { label: "Visit Jacó", href: "/visit-jaco" },
     { label: "Contact", href: "/contact" },
+    { label: "Sitemap", href: "/sitemap.xml" },
   ],
 };
 

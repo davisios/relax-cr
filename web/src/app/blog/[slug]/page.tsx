@@ -1,9 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowLeft, Calendar, User, ArrowRight } from "lucide-react";
 import BlogPostBody from "@/components/blog/BlogPostBody";
-import { BLOG_POSTS, getBlogPostBySlug, getBlogPostContent } from "@/lib/data/blog";
+import KeyTakeaways from "@/components/blog/KeyTakeaways";
+import ShareButton from "@/components/ui/ShareButton";
+import { BLOG_POSTS, getBlogPostBySlug, getBlogPostByLegacySlug, getBlogPostContent } from "@/lib/data/blog";
+import { absoluteUrl, AGENT_NAME } from "@/lib/seo";
 import type { Metadata } from "next";
 
 interface Props {
@@ -13,9 +16,20 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = getBlogPostBySlug(params.slug);
   if (!post) return { title: "Article Not Found" };
+  // Meta title/description are intentionally different from the on-page H1 and excerpt.
+  const title = post.metaTitle ?? post.title;
+  const description = post.metaDescription ?? post.excerpt ?? post.description;
   return {
-    title: post.title,
-    description: post.excerpt ?? post.description,
+    title,
+    description,
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: `/blog/${post.slug}`,
+      images: post.image ? [{ url: post.image }] : undefined,
+    },
   };
 }
 
@@ -25,14 +39,36 @@ export async function generateStaticParams() {
 
 export default function BlogPostPage({ params }: Props) {
   const post = getBlogPostBySlug(params.slug);
-  if (!post) notFound();
+  if (!post) {
+    const legacy = getBlogPostByLegacySlug(params.slug);
+    if (legacy) permanentRedirect(`/blog/${legacy.slug}`);
+    notFound();
+  }
 
   const content = getBlogPostContent(params.slug);
   const related = BLOG_POSTS.filter((p) => p.slug !== post.slug).slice(0, 3);
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    description: post.metaDescription ?? post.excerpt,
+    image: post.image,
+    datePublished: post.date ? new Date(post.date).toISOString() : undefined,
+    author: {
+      "@type": "Person",
+      name: post.author ?? AGENT_NAME,
+    },
+    mainEntityOfPage: absoluteUrl(`/blog/${post.slug}`),
+  };
+
   return (
     <div className="pt-20 min-h-screen">
-      <div className="container-page pt-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      <div className="container-page pt-6 flex items-center justify-between gap-4">
         <Link
           href="/blog"
           className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-ocean-700 transition-colors"
@@ -40,6 +76,11 @@ export default function BlogPostPage({ params }: Props) {
           <ArrowLeft size={16} />
           Back to Blog
         </Link>
+        <ShareButton
+          title={post.title}
+          url={absoluteUrl(`/blog/${post.slug}`)}
+          text={post.excerpt}
+        />
       </div>
 
       <article className="container-page py-8 max-w-4xl">
@@ -78,6 +119,8 @@ export default function BlogPostPage({ params }: Props) {
           {post.title}
         </h1>
 
+        {post.takeaways && <KeyTakeaways items={post.takeaways} />}
+
         {content ? (
           <BlogPostBody sections={content.sections} />
         ) : post.excerpt ? (
@@ -89,7 +132,19 @@ export default function BlogPostPage({ params }: Props) {
             Ready to buy in Jaco Beach?
           </p>
           <p className="text-neutral-600 mb-4">
-            Contact Dominique for personalized guidance in English, Spanish, or French.
+            Contact Dominique for personalized guidance in English, Spanish, or French — or start with the{" "}
+            <Link href="/properties" className="font-semibold text-ocean-700 hover:text-ocean-900">
+              current listings
+            </Link>
+            , the{" "}
+            <Link href="/neighborhoods" className="font-semibold text-ocean-700 hover:text-ocean-900">
+              neighborhood guides
+            </Link>{" "}
+            and the{" "}
+            <Link href="/faq" className="font-semibold text-ocean-700 hover:text-ocean-900">
+              buyer FAQ
+            </Link>
+            .
           </p>
           <Link href="/contact" className="btn-primary inline-flex">
             Contact Dominique

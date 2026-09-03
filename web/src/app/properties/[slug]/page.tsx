@@ -1,26 +1,51 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Bed, Bath, Maximize2, MapPin, Phone, MessageCircle, ArrowLeft, Check, Car, Calendar } from "lucide-react";
-import { getAllProperties, getPropertyBySlug } from "@/lib/data/properties";
+import { Bed, Bath, Maximize2, MapPin, Phone, MessageCircle, ArrowLeft, Check, Car, Calendar, ArrowRight } from "lucide-react";
+import { getAllProperties, getPropertyBySlug, getPropertyByLegacySlug } from "@/lib/data/properties";
+import { NEIGHBORHOODS } from "@/lib/data/neighborhoods";
 import { formatPrice, formatArea } from "@/lib/utils/format";
+import { absoluteUrl, metaDescription } from "@/lib/seo";
 import StatusBadge from "@/components/ui/StatusBadge";
 import PropertyCard from "@/components/property/PropertyCard";
 import PropertyMap from "@/components/property/PropertyMap";
 import PropertyDescription from "@/components/property/PropertyDescription";
 import PropertyGallery from "@/components/property/PropertyGallery";
+import ShareButton from "@/components/ui/ShareButton";
 import type { Metadata } from "next";
 
 interface Props {
   params: { slug: string };
 }
 
+/** City taxonomy values look like "Garabito Central Pacific Costa Rica>Tarcoles" — keep the last segment. */
+function shortLocation(city: string | undefined): string {
+  const segment = (city ?? "").split(">").pop()?.trim();
+  return segment || "Jaco Beach";
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const property = getPropertyBySlug(params.slug);
   if (!property) return { title: "Property Not Found" };
+
+  const location = shortLocation(property.city);
+  // Meta title is intentionally different from the on-page H1 (the bare listing title).
+  const title = `${property.title.replace(/[,\s]+$/, "")} — For Sale in ${location}`;
+  const description = metaDescription(
+    property.description,
+    `${property.title}: ${property.category.toLowerCase()} for sale in ${location}, Costa Rica. Contact Dominique Brousseau for details and a showing.`,
+  );
+
   return {
-    title: property.title,
-    description: property.description,
+    title,
+    description,
+    alternates: { canonical: `/properties/${property.slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `/properties/${property.slug}`,
+      images: property.images[0] ? [{ url: property.images[0].src }] : undefined,
+    },
   };
 }
 
@@ -30,7 +55,43 @@ export async function generateStaticParams() {
 
 export default function PropertyDetailPage({ params }: Props) {
   const property = getPropertyBySlug(params.slug);
-  if (!property) notFound();
+  if (!property) {
+    const legacy = getPropertyByLegacySlug(params.slug);
+    if (legacy) permanentRedirect(`/properties/${legacy.slug}`);
+    notFound();
+  }
+
+  const neighborhood = NEIGHBORHOODS.find((n) => n.city === property.citySlug);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: property.title,
+    url: absoluteUrl(`/properties/${property.slug}`),
+    description: metaDescription(property.description, property.title),
+    image: property.images.map((img) => img.src),
+    offers: property.price
+      ? {
+          "@type": "Offer",
+          price: property.price,
+          priceCurrency: "USD",
+          availability:
+            property.status === "sold"
+              ? "https://schema.org/SoldOut"
+              : "https://schema.org/InStock",
+        }
+      : undefined,
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+      { "@type": "ListItem", position: 2, name: "Properties", item: absoluteUrl("/properties") },
+      { "@type": "ListItem", position: 3, name: property.title, item: absoluteUrl(`/properties/${property.slug}`) },
+    ],
+  };
 
   const similar = getAllProperties()
     .filter((p) => p.slug !== property.slug && p.categorySlug === property.categorySlug)
@@ -38,8 +99,16 @@ export default function PropertyDetailPage({ params }: Props) {
 
   return (
     <div className="pt-20 min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       {/* Back */}
-      <div className="container-page pt-6">
+      <div className="container-page pt-6 flex items-center justify-between gap-4">
         <Link
           href="/properties"
           className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-ocean-700 transition-colors"
@@ -47,6 +116,11 @@ export default function PropertyDetailPage({ params }: Props) {
           <ArrowLeft size={16} />
           Back to Listings
         </Link>
+        <ShareButton
+          title={property.title}
+          url={absoluteUrl(`/properties/${property.slug}`)}
+          text={`${property.title} — ${property.category} in ${shortLocation(property.city)}, Costa Rica`}
+        />
       </div>
 
       {/* Image gallery */}
@@ -73,7 +147,7 @@ export default function PropertyDetailPage({ params }: Props) {
               {property.city && (
                 <div className="flex items-center gap-1.5 mt-3 text-neutral-500">
                   <MapPin size={15} />
-                  <span className="text-sm">{property.city}, Costa Rica</span>
+                  <span className="text-sm">{shortLocation(property.city)}, Costa Rica</span>
                 </div>
               )}
             </div>
@@ -169,6 +243,44 @@ export default function PropertyDetailPage({ params }: Props) {
             )}
 
             <PropertyMap property={property} />
+
+            {/* Related resources */}
+            <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-6">
+              <h2 className="font-display text-xl font-semibold text-ocean-900 mb-3">
+                Helpful Resources
+              </h2>
+              <ul className="space-y-2 text-sm">
+                {neighborhood && (
+                  <li>
+                    <Link
+                      href={`/neighborhoods/${neighborhood.slug}`}
+                      className="inline-flex items-center gap-1.5 font-semibold text-ocean-700 hover:text-ocean-900"
+                    >
+                      <ArrowRight size={13} />
+                      Living in {neighborhood.name}: the full neighborhood guide
+                    </Link>
+                  </li>
+                )}
+                <li>
+                  <Link
+                    href="/blog/comprehensive-guide-buying-property-jaco-beach"
+                    className="inline-flex items-center gap-1.5 font-semibold text-ocean-700 hover:text-ocean-900"
+                  >
+                    <ArrowRight size={13} />
+                    How to buy property in Jaco Beach, step by step
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/faq"
+                    className="inline-flex items-center gap-1.5 font-semibold text-ocean-700 hover:text-ocean-900"
+                  >
+                    <ArrowRight size={13} />
+                    Costa Rica real estate FAQ — taxes, titles and closing costs
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* Sidebar */}

@@ -4,8 +4,9 @@ import { BLOG_POSTS } from "@/lib/data/blog";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Jaco Beach Real Estate Blog",
-  description: "Market news, lifestyle tips, and investment strategies for Jaco Beach, Costa Rica real estate.",
+  title: "Jaco Beach Real Estate Blog — Guides for Buyers & Investors",
+  description: "Market news, buying guides, and investment strategies for Jaco Beach and Costa Rica's Central Pacific coast, written by a local RE/MAX agent.",
+  alternates: { canonical: "/blog" },
 };
 
 export default function BlogPage() {
@@ -36,18 +37,18 @@ export default function BlogPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2">
               <div className="aspect-video lg:aspect-auto bg-gradient-to-br from-ocean-700 to-ocean-900 relative">
                 <div className="absolute inset-0 flex items-center justify-center p-10">
-                  <h2 className="font-display text-3xl font-semibold text-white text-center leading-tight">
+                  <span className="font-display text-3xl font-semibold text-white text-center leading-tight">
                     {BLOG_POSTS[0].title}
-                  </h2>
+                  </span>
                 </div>
               </div>
               <div className="p-8 flex flex-col justify-center">
                 <span className="badge bg-ocean-100 text-ocean-700 mb-4">
                   {BLOG_POSTS[0].category} · Featured
                 </span>
-                <h3 className="font-display text-3xl font-semibold text-ocean-900 leading-tight mb-4 group-hover:text-ocean-700 transition-colors">
+                <h2 className="font-display text-3xl font-semibold text-ocean-900 leading-tight mb-4 group-hover:text-ocean-700 transition-colors">
                   {BLOG_POSTS[0].title}
-                </h3>
+                </h2>
                 <p className="text-neutral-500 leading-relaxed mb-6">{BLOG_POSTS[0].excerpt}</p>
                 <div className="flex items-center gap-4 text-sm text-neutral-400 mb-6">
                   <span className="flex items-center gap-1.5"><Calendar size={13} />{BLOG_POSTS[0].date}</span>

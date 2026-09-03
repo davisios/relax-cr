@@ -20,6 +20,8 @@ export interface PropertyImage {
 
 export interface Property {
   slug: string;
+  /** Original slug from the WordPress export, kept so legacy URLs can redirect. */
+  sourceSlug: string;
   url: string;
   title: string;
   description?: string;

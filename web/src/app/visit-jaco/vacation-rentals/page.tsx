@@ -1,57 +1,22 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { getPropertyBySlug } from "@/lib/data/properties";
+import { FEATURED, type RentalImage } from "./featured-rentals";
+import RentalsExplorer from "./RentalsExplorer";
 
 export const metadata: Metadata = {
   title: "Vacation Rentals in Jacó",
   description: "Find the perfect vacation rental in Jacó Beach, Costa Rica — beachfront condos, villas with pools, and gated communities managed by Dominique Brousseau.",
+  alternates: { canonical: "/visit-jaco/vacation-rentals" },
 };
 
-const AMENITIES = [
-  { icon: "🔒", label: "24-hour Security" },
-  { icon: "❄️", label: "Air Conditioning" },
-  { icon: "🏖️", label: "Beachfront" },
-  { icon: "🛋️", label: "Furnished" },
-  { icon: "🔑", label: "Gated Community" },
-  { icon: "🌊", label: "Ocean View" },
-  { icon: "🐾", label: "Pet Friendly" },
-  { icon: "🏊", label: "Pool" },
-  { icon: "🚶", label: "Walk to Beach" },
-];
-
-const FEATURED = [
-  {
-    title: "Tropical Condo Steps from Jacó Beach",
-    price: "$175,000",
-    beds: 1,
-    baths: 1,
-    size: "56 m²",
-    slug: "tropical-condo-steps-from-jaco-beach",
-    tags: ["Walk to Beach", "Air Conditioning", "Furnished"],
-    gradient: "linear-gradient(135deg, #8fd6cb, #0c6f62)",
-  },
-  {
-    title: "Live Jacó Penthouse with Ocean & Sunset Views",
-    price: "$560,000",
-    beds: 3,
-    baths: 3,
-    size: "139 m²",
-    slug: "live-jaco-penthouse-ocean-sunset-views",
-    tags: ["Ocean View", "Pool", "Air Conditioning"],
-    gradient: "linear-gradient(135deg, #ffd7a6, #e76f8e)",
-  },
-  {
-    title: "Modern Turn-Key Viva Jacó Condo",
-    price: "$219,000",
-    beds: 2,
-    baths: 1,
-    size: "72 m²",
-    slug: "modern-turnkey-viva-jaco-condo",
-    tags: ["Gated Community", "Pool", "Walk to Beach"],
-    gradient: "linear-gradient(135deg, #bfe0f2, #3f7fb0)",
-  },
-];
-
 export default function VacationRentalsPage() {
+  const images: Record<string, RentalImage | undefined> = {};
+  for (const rental of FEATURED) {
+    const property = getPropertyBySlug(rental.slug);
+    const photo = property?.images[0];
+    if (photo) images[rental.slug] = { src: photo.src, alt: photo.alt };
+  }
+
   return (
     <div style={{ paddingTop: "74px", background: "#fff" }}>
 
@@ -71,86 +36,10 @@ export default function VacationRentalsPage() {
           <p style={{ margin: "16px 0 0", fontSize: "18px", lineHeight: 1.65, color: "rgba(255,255,255,.88)", maxWidth: "52ch" }}>
             Over 283 vacation rentals in Jacó Beach — beachfront condos, gated villas and ocean-view retreats, all managed by Dominique.
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "32px" }}>
-            {["Beachfront", "Ocean View", "Pool", "Gated Community", "Pet Friendly"].map((tag) => (
-              <span key={tag} style={{ background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.35)", color: "#fff", fontWeight: 600, fontSize: "13px", padding: "7px 15px", borderRadius: "999px" }}>
-                {tag}
-              </span>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* Filter amenities */}
-      <section style={{ padding: "48px 28px 0", background: "#f7f5f0", borderBottom: "1px solid #ece8df" }}>
-        <div style={{ maxWidth: "1240px", margin: "0 auto" }}>
-          <p style={{ margin: "0 0 18px", fontSize: "13px", fontWeight: 700, color: "#7a857f", textTransform: "uppercase", letterSpacing: "1.5px" }}>
-            Filter by amenity
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", paddingBottom: "28px" }}>
-            {AMENITIES.map((a) => (
-              <span
-                key={a.label}
-                style={{ background: "#fff", border: "1.5px solid #e0dccf", color: "#3a443f", fontWeight: 600, fontSize: "13.5px", padding: "8px 16px", borderRadius: "999px", display: "flex", alignItems: "center", gap: "6px" }}
-              >
-                {a.icon} {a.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured listings */}
-      <section style={{ padding: "56px 28px 80px" }}>
-        <div style={{ maxWidth: "1240px", margin: "0 auto" }}>
-          <span style={{ fontSize: "13px", letterSpacing: "2.5px", textTransform: "uppercase", fontWeight: 700, color: "#0e7a66" }}>
-            Featured rentals
-          </span>
-          <h2 style={{ margin: "10px 0 36px", fontSize: "clamp(26px, 3.5vw, 38px)", fontWeight: 800, color: "#16201d", letterSpacing: "-1.2px" }}>
-            Curated picks by Dominique
-          </h2>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "28px" }}>
-            {FEATURED.map((p) => (
-              <Link key={p.slug} href={`/properties/${p.slug}`} style={{ textDecoration: "none" }}>
-                <article style={{ background: "#fff", border: "1px solid #ece8df", borderRadius: "20px", overflow: "hidden", cursor: "pointer" }}>
-                  <div style={{ height: "210px", background: p.gradient, display: "flex", alignItems: "flex-end", padding: "16px" }}>
-                    <div style={{ display: "flex", gap: "7px", flexWrap: "wrap" }}>
-                      {p.tags.map((tag) => (
-                        <span key={tag} style={{ background: "rgba(255,255,255,.9)", color: "#0e7a66", fontWeight: 700, fontSize: "11.5px", padding: "4px 10px", borderRadius: "999px" }}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ padding: "20px 22px 22px" }}>
-                    <h3 style={{ margin: "0 0 10px", fontSize: "17px", fontWeight: 700, color: "#16201d", lineHeight: 1.3 }}>
-                      {p.title}
-                    </h3>
-                    <div style={{ fontSize: "13.5px", color: "#7a857f", fontWeight: 600, marginBottom: "14px" }}>
-                      {p.beds} Bd · {p.baths} Ba · {p.size}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "14px", borderTop: "1px solid #f0ece3" }}>
-                      <span style={{ fontSize: "22px", fontWeight: 800, color: "#0e7a66", letterSpacing: "-.6px" }}>{p.price}</span>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#16201d" }}>View details →</span>
-                    </div>
-                  </div>
-                </article>
-              </Link>
-            ))}
-          </div>
-
-          {/* All listings CTA */}
-          <div style={{ textAlign: "center", marginTop: "48px" }}>
-            <Link
-              href="/properties"
-              style={{ textDecoration: "none", display: "inline-block", background: "#0e7a66", color: "#fff", fontWeight: 700, fontSize: "15px", padding: "14px 36px", borderRadius: "999px" }}
-            >
-              Browse all 283 listings →
-            </Link>
-          </div>
-        </div>
-      </section>
+      <RentalsExplorer images={images} />
 
       {/* Contact */}
       <section style={{ padding: "0 28px 100px" }}>

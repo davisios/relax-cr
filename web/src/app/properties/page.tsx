@@ -6,6 +6,7 @@ export const metadata = {
   title: "Properties for Sale in Jaco Beach, Costa Rica",
   description:
     "Browse all available properties in Jaco Beach, Hermosa, Herradura, Punta Leona and the Central Pacific coast of Costa Rica.",
+  alternates: { canonical: "/properties" },
 };
 
 export default function PropertiesPage() {

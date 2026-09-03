@@ -23,6 +23,7 @@ const VALID_STATUSES: PropertyStatus[] = [
 ];
 
 let cachedProperties: Property[] | null = null;
+let cachedMtimeMs = 0;
 
 function formatPriceLabel(price: number): string {
   return `$ ${price.toLocaleString("en-US")}`;
@@ -82,6 +83,48 @@ function mapImages(raw: SourceProperty): Property["images"] {
     }));
 }
 
+// SEO: URLs should carry no digits and no connector words.
+const SLUG_STOPWORDS = new Set([
+  "a", "an", "the", "and", "or", "of", "in", "on", "at", "to",
+  "with", "for", "from", "by", "i",
+]);
+
+const ONES = [
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+  "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+  "seventeen", "eighteen", "nineteen",
+];
+const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+
+/** Spell out an integer as hyphenated words (unit numbers like "201" must stay distinct). */
+function numberToWords(value: number): string {
+  if (value < 20) return ONES[value];
+  if (value < 100) {
+    const rest = value % 10;
+    return TENS[Math.floor(value / 10)] + (rest ? `-${ONES[rest]}` : "");
+  }
+  if (value < 1000) {
+    const rest = value % 100;
+    return `${ONES[Math.floor(value / 100)]}-hundred` + (rest ? `-${numberToWords(rest)}` : "");
+  }
+  if (value < 1000000) {
+    const rest = value % 1000;
+    return `${numberToWords(Math.floor(value / 1000))}-thousand` + (rest ? `-${numberToWords(rest)}` : "");
+  }
+  return String(value)
+    .split("")
+    .map((d) => ONES[Number(d)])
+    .join("-");
+}
+
+function cleanSlug(slug: string): string {
+  const words = slug
+    .split("-")
+    .map((word) => (/^\d+$/.test(word) ? numberToWords(Number(word)) : word))
+    .filter((word) => word && !SLUG_STOPWORDS.has(word));
+  return words.join("-") || slug;
+}
+
 function mapSourceProperty(raw: SourceProperty): Property | null {
   if (raw.status !== "publish") return null;
 
@@ -90,7 +133,8 @@ function mapSourceProperty(raw: SourceProperty): Property | null {
   const images = mapImages(raw);
 
   return {
-    slug: raw.slug,
+    slug: cleanSlug(raw.slug),
+    sourceSlug: raw.slug,
     url: raw.url,
     title: raw.title,
     description: raw.content.description || raw.content.body || undefined,
@@ -130,7 +174,15 @@ function loadSourceFile(): PropertiesSourceFile | null {
 }
 
 function loadAllProperties(): Property[] {
-  if (cachedProperties) return cachedProperties;
+  // Cache keyed on the file's mtime so a fresh sync is picked up without a restart.
+  let mtimeMs = 0;
+  try {
+    mtimeMs = fs.statSync(PROPERTIES_JSON).mtimeMs;
+  } catch {
+    // missing file — fall through and let loadSourceFile handle it
+  }
+  if (cachedProperties && mtimeMs === cachedMtimeMs) return cachedProperties;
+  cachedMtimeMs = mtimeMs;
 
   const source = loadSourceFile();
   if (!source) {
@@ -162,6 +214,11 @@ export function getFeaturedProperties(limit = 6): Property[] {
 
 export function getPropertyBySlug(slug: string): Property | null {
   return getAllProperties().find((p) => p.slug === slug) ?? null;
+}
+
+/** Match a request against the original (pre-cleanup) slug so old URLs can redirect. */
+export function getPropertyByLegacySlug(slug: string): Property | null {
+  return getAllProperties().find((p) => p.sourceSlug === slug) ?? null;
 }
 
 export function getPropertiesByCategory(categorySlug: string): Property[] {

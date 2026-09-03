@@ -3,6 +3,9 @@ import { Inter, Cormorant_Garamond, Great_Vibes } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import MobileStickyCta from "@/components/layout/MobileStickyCta";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import { SITE_URL, SITE_NAME, AGENT_NAME, AGENT_PHONE, AGENT_EMAIL } from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,6 +28,7 @@ const greatVibes = Great_Vibes({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Dominique Brousseau | Jaco Beach Real Estate Agent",
     template: "%s | Relax Costa Rica",
@@ -41,9 +45,38 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://relaxcostarica.com",
-    siteName: "Relax Costa Rica",
+    url: SITE_URL,
+    siteName: SITE_NAME,
   },
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
+};
+
+const AGENT_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "RealEstateAgent",
+  name: `${AGENT_NAME} — Jaco Beach Real Estate Agent`,
+  url: SITE_URL,
+  email: AGENT_EMAIL,
+  telephone: AGENT_PHONE,
+  image: "https://relaxcostarica.com/wp-content/uploads/2023/12/dominique-scaled.jpg",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "RE/MAX Oceanside Realty, Calle Pastor Diaz",
+    addressLocality: "Jaco",
+    addressRegion: "Puntarenas",
+    postalCode: "61101",
+    addressCountry: "CR",
+  },
+  areaServed: ["Jaco", "Hermosa Beach", "Herradura", "Punta Leona", "Tarcoles", "Esterillos"],
+  knowsLanguage: ["en", "es", "fr"],
+  sameAs: [
+    "https://www.facebook.com/DominiqueBrousseau.Remax",
+    "https://www.instagram.com/dominique.brousseau.remax/",
+    "https://www.youtube.com/channel/UCegTFCgBZjEeZcEWWscZrIg",
+    "https://www.linkedin.com/in/dominique-brousseau-b9a65a82/",
+  ],
 };
 
 export default function RootLayout({
@@ -57,9 +90,15 @@ export default function RootLayout({
       className={`${inter.variable} ${cormorant.variable} ${greatVibes.variable}`}
     >
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(AGENT_JSON_LD) }}
+        />
+        <GoogleAnalytics />
         <Navbar />
         <main>{children}</main>
         <Footer />
+        <MobileStickyCta />
       </body>
     </html>
   );

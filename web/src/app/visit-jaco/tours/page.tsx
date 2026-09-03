@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Tours & Activities in Jacó",
   description: "ATV rides, sport fishing, zip lines, crocodile tours, horseback riding, rafting and more — the best tours and activities in Jacó Beach, Costa Rica.",
+  alternates: { canonical: "/visit-jaco/tours" },
 };
 
 const TOURS = [
@@ -117,7 +118,7 @@ export default function ToursPage() {
                 style={{ background: "#fff", border: "1px solid #ece8df", borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column" }}
               >
                 {/* Image */}
-                <div style={{ height: "200px", backgroundImage: `url(${t.image})`, backgroundSize: "cover", backgroundPosition: "center", position: "relative" }}>
+                <div role="img" aria-label={`${t.name} in Jacó, Costa Rica`} style={{ height: "200px", backgroundImage: `url(${t.image})`, backgroundSize: "cover", backgroundPosition: "center", position: "relative" }}>
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,.4), transparent 60%)" }} />
                   <span style={{ position: "absolute", top: "14px", left: "14px", background: "rgba(255,255,255,.9)", color: tagStyle.color, fontWeight: 700, fontSize: "12px", padding: "5px 12px", borderRadius: "999px" }}>
                     {t.tag}

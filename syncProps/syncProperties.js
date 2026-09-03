@@ -25,6 +25,10 @@ const OUTPUT_PATH = path.join(__dirname, "..", "web", "properties.json");
 const AUDIT_LOG_PATH = path.join(__dirname, "audit.log");
 const CONCURRENCY = 6;
 
+// Agents whose listings should not appear on the site (matched by the
+// /agents/<slug> link on each listing page).
+const EXCLUDED_AGENT_SLUGS = new Set(["alexandrakleinow", "timothygiannone"]);
+
 // ─── HTTP helpers ─────────────────────────────────────────────────────────────
 
 function fetchText(url, redirectCount = 0) {
@@ -264,6 +268,7 @@ async function main() {
   let done = 0;
   const failures = [];
   const skippedRentals = [];
+  const skippedExcluded = [];
   const skippedNoImages = [];
   let totalRemoved = 0;
   const allProperties = [];
@@ -282,6 +287,11 @@ async function main() {
         fetchTextRetry(post.link),
       ]);
       const scraped = scrapeListingPage(pageHtml);
+
+      if (scraped.agentSlug && EXCLUDED_AGENT_SLUGS.has(scraped.agentSlug)) {
+        skippedExcluded.push({ id: post.id, slug: post.slug, agent: scraped.agentSlug });
+        return null;
+      }
 
       const gallery = mediaRaw
         .filter((m) => m.source_url && /\.(jpe?g|png|webp)$/i.test(m.source_url))
@@ -369,7 +379,7 @@ async function main() {
   }
 
   console.log(`  Removed ${totalRemoved} broken image(s)`);
-  console.log(`  Skipped ${skippedRentals.length} rental(s), ${skippedNoImages.length} with no valid images, ${failures.length} failed`);
+  console.log(`  Skipped ${skippedRentals.length} rental(s), ${skippedExcluded.length} from excluded agents, ${skippedNoImages.length} with no valid images, ${failures.length} failed`);
   console.log(`\n✅ Total properties to write: ${allProperties.length}`);
 
   if (allProperties.length < 100) {
@@ -393,6 +403,7 @@ async function main() {
     totalProperties: allProperties.length,
     brokenImagesRemoved: totalRemoved,
     skippedRentals: skippedRentals.length,
+    skippedExcludedAgents: skippedExcluded.length,
     skippedNoImages: skippedNoImages.length,
     skippedProperties: skippedNoImages,
     failures,

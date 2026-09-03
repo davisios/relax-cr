@@ -149,8 +149,10 @@ function parseNumber(text) {
 
 function scrapeListingPage(html) {
   const priceMatch = html.match(/price_area\">\s*\$?\s*([\d,]+)/);
-  const latMatch = html.match(/"general_latitude":"(-?[\d.]+)"/);
-  const lngMatch = html.match(/"general_longitude":"(-?[\d.]+)"/);
+  // The listing's own pin is in data-cur_lat/long on the map shortcode.
+  // ("general_latitude" is the theme's site-wide default — same on every page.)
+  const latMatch = html.match(/data-cur_lat="(-?[\d.]+)"/);
+  const lngMatch = html.match(/data-cur_long="(-?[\d.]+)"/);
   const agentMatch = html.match(/\/agents\/([a-z0-9-]+)/);
 
   return {

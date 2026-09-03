@@ -16,6 +16,7 @@ const NAV_LINKS = [
       { label: "Multi-Family", href: "/properties?type=multi-family-duplex-triplex" },
       { label: "Hotel / BnB", href: "/properties?type=hotel-bnb-apt-building" },
       { label: "All Listings", href: "/properties" },
+      { label: "Map View", href: "/properties/map" },
     ],
   },
   {

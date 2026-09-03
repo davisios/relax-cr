@@ -7,6 +7,7 @@ import { NEIGHBORHOODS } from "@/lib/data/neighborhoods";
 const STATIC_ROUTES: Array<{ path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }> = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/properties", priority: 0.9, changeFrequency: "daily" },
+  { path: "/properties/map", priority: 0.7, changeFrequency: "daily" },
   { path: "/neighborhoods", priority: 0.8, changeFrequency: "monthly" },
   { path: "/blog", priority: 0.7, changeFrequency: "weekly" },
   { path: "/faq", priority: 0.7, changeFrequency: "monthly" },

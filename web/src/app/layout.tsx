@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Cormorant_Garamond, Great_Vibes } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
@@ -99,6 +100,11 @@ export default function RootLayout({
         <main>{children}</main>
         <Footer />
         <MobileStickyCta />
+        {/* Tidio live chat */}
+        <Script
+          src="https://code.tidio.co/b85xnnoc7g6urgi40sz80a1qgm3vucor.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

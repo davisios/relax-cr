@@ -300,6 +300,12 @@
     /* Leave room for the fixed CTA bar */
     padding-bottom: calc(48px + env(safe-area-inset-bottom));
   }
+
+  /* Keep the Tidio chat bubble above the fixed CTA bar */
+  #tidio-chat-iframe,
+  #tidio-chat iframe {
+    bottom: calc(52px + env(safe-area-inset-bottom)) !important;
+  }
 }
 
 @media (min-width: 1024px) {
